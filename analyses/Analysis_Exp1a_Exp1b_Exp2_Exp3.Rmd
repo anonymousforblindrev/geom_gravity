@@ -1,0 +1,1556 @@
+---
+title: "Analysis of Exp. 1a, 1b, 2, and 3"
+output:  
+  html_document:
+    number_sections: true
+    toc: true  
+    collapsed: false
+    toc_float: true
+    smooth_scroll: false
+    toc_depth: 3
+    self_contained: yes
+---
+
+# Packages
+
+```{r, message = FALSE, echo = FALSE, warning=FALSE}
+# packages
+library(ez)
+library(ggplot2)
+library(plyr)
+library(pastecs)
+library(ez)
+library(data.table)
+library(overlapping) # to compute the 
+library(tidyr)
+library(showtext)
+#install.packages("expss")
+library(expss)
+library(dplyr)
+
+font_add_google("Poppins", "Poppins")
+font_add_google("Roboto Mono", "Roboto Mono")
+showtext_auto()
+```
+
+
+# Read in data
+
+
+```{r}
+# read data 
+tdata_between <- read.delim("tdata_between.txt", header=TRUE, sep="\t", na.strings="NA", dec=".", strip.white=TRUE) # Exp1a
+
+tdata_within <- read.delim("tdata_within.txt", header=TRUE, sep="\t", na.strings="NA", dec=".", strip.white=TRUE) # Exp1b
+
+tdata_manip <- read.delim("tdata_manip.txt", header=TRUE, sep="\t", na.strings="NA", dec=".", strip.white=TRUE) # Exp2
+
+tdata_2d <- read.delim("tdata_between_2d.txt", header=TRUE, sep="\t", na.strings="NA", dec=".", strip.white=TRUE) # Exp3
+
+```
+
+# Plot Results
+
+## Plot Results of Exp. 1a
+
+```{r}
+
+tdata <- tdata_between
+
+# declare factors and their levels 
+tdata$Dimensions <- factor(tdata$Dimensions, levels = c("3D", "2D"), labels = c("3D", "2D"))
+
+tdata$Transformation <- factor(tdata$Transformation, levels = c("Small", "Angle", "90_rot", "180_rot", "X_sym", "Y_transl", "X_transl"), 
+                               labels = c("Size", "Shape", "90-Rot.", "180-Rot.", "X-Sym.", "Y-Tran.","X-Tran."))
+
+tdata$Side <- factor(tdata$Side, levels = c("left", "right"), labels = c("left", "right"))
+
+
+# recode responses so that 1 = first, 2 = second, 3 = both
+tdata$selection_rec <- c(1:length(tdata$sID))
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 1] <- "symm"
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 2] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 1] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 2] <- "symm"
+
+
+
+#tdata_strength <-  tdata_strength %>% gather(Entity, Strength, g1:g3, factor_key=TRUE)
+
+ 
+tdata$selection_rec <- factor(tdata$selection_rec, levels = c("symm", "non-symm"), labels = c("Y-Symm.", "Not-Y-Symm."))
+```
+
+
+
+
+```{r}
+# create a summary dataset that also contains the percentages
+plotdata_between <- tdata %>%
+  group_by(Dimensions, Transformation, selection_rec) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+
+
+```
+
+
+```{r, echo = FALSE}
+
+plotdata <- plotdata_between
+
+
+# create a theme to handle the design 
+myTheme <- theme(plot.title = element_text(face="bold", size = 16),
+        axis.title.x = element_text(face = "bold", size = 20),
+        axis.title.y = element_text(face = "bold", size = 20),
+        axis.text.x = element_text(size = 20, angle = 45, hjust = 1), 
+        axis.text.y = element_text(size = 18, angle = 0),
+        legend.text = element_text(size = 18),
+        legend.title = element_text(face = "bold", size = 18),
+        strip.text.x = element_text(size = 18),
+        #panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.background = element_blank(), 
+        axis.line.x = element_line(colour = "black"), 
+        axis.line.y = element_line(colour = "black"),
+        axis.text = element_text(colour ="black"), 
+        axis.ticks = element_line(colour ="black"))
+
+
+theme_set(theme_light(base_size = 20, base_family = "Poppins"))
+
+
+
+x <- c("Y_transl", "Big", "180_rot", "90_rot", "X_sym", "Shape", "X_transl")
+
+ind <- seq(1, nrow(plotdata), by=2)
+
+plotdata_sub <- plotdata[ind, ]
+
+
+# append CI of the proportions 
+
+plotdata_sub$n <- 122
+
+plotdata_sub$SE <- sqrt((plotdata_sub$pct*(1-plotdata_sub$pct))/plotdata_sub$n)
+plotdata_sub$CI <- 1.96 * plotdata_sub$SE
+
+
+
+
+
+library(scales)
+theme_set(theme_light(base_size = 12, base_family = "Poppins"))
+
+pvalues_x <- c(1:7)
+pvalues <- c(rep("p < .001",6), "p = .057")
+
+g<- ggplot(plotdata, 
+       aes(x = Transformation,
+           y = pct,
+           fill = selection_rec)) +
+  geom_bar(stat = "identity",
+           position = "fill") +
+  scale_y_continuous(limits = seq(0, 2),
+                     breaks = seq(0, 1, .25),
+                     expand = c(0,0),
+                     label = percent) +
+  coord_cartesian(xlim =c(1, 7), ylim = c(0, 1.1))+
+  #coord_cartesian(clip = "off")+
+  geom_text(aes(label = lbl), 
+            size = 4.5,
+            position = position_stack(vjust = 0.5)) +
+  scale_fill_brewer(palette = "Pastel1") +
+  labs(y = "Percentage", 
+       fill = "Selected Object",
+       x = "Type of Transformation",
+       title = "Results Exp. 1a (N = 854): 3D Context")+
+  annotate(geom = "hline",yintercept = 0.5, y = 0.5, color = "black", size = 1, linetype='dotted')+
+  annotate("pointrange", x = plotdata_sub$Transformation, y = 1 - plotdata_sub$pct, 
+           ymin = 1 - plotdata_sub$pct - plotdata_sub$CI, 
+           ymax = 1- plotdata_sub$pct + plotdata_sub$CI, 
+           colour = "black", size = 0.8, shape = 22, fill = "lightblue", fatten = 1)+
+  annotate("text", x = pvalues_x, y = Inf, label = pvalues, size = 4, vjust = 1.8)+
+  theme(legend.position = "top", axis.title = element_text(size = 15), axis.text = element_text(size = 13, color = "black"),
+        legend.text = element_text(size = 13),legend.title = element_text(size = 13))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+g
+#ggsave("selections_between.pdf",width=6,height=5)
+#ggsave("selections_between.svg",width=6,height=5)
+```
+
+## Plot Results of Exp. 1b
+
+
+```{r}
+
+tdata <- tdata_within
+
+# declare factors and their levels 
+tdata$Dimensions <- factor(tdata$Dimensions, levels = c("3D", "2D"), labels = c("3D", "2D"))
+
+tdata$Transformation <- factor(tdata$Transformation, levels = c("Small", "Angle", "90_rot", "180_rot", "X_sym", "Y_transl", "X_transl"), 
+                               labels = c("Size", "Shape", "90-Rot.", "180-Rot.", "X-Sym.", "Y-Tran.","X-Tran."))
+
+tdata$Side <- factor(tdata$Side, levels = c("left", "right"), labels = c("left", "right"))
+
+
+# recode responses so that 1 = first, 2 = second, 3 = both
+tdata$selection_rec <- c(1:length(tdata$sID))
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 1] <- "symm"
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 2] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 1] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 2] <- "symm"
+
+
+
+#tdata_strength <-  tdata_strength %>% gather(Entity, Strength, g1:g3, factor_key=TRUE)
+
+ 
+tdata$selection_rec <- factor(tdata$selection_rec, levels = c("symm", "non-symm"), labels = c("Y-Symm.", "Not-Y-Symm."))
+
+
+```
+
+
+
+
+```{r}
+# create a summary dataset that also contains the percentages
+plotdata_within <- tdata %>%
+  group_by(Dimensions, Transformation, selection_rec) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+
+
+```
+
+
+```{r, echo = FALSE}
+
+plotdata <- plotdata_within
+
+
+
+
+theme_set(theme_light(base_size = 20, base_family = "Poppins"))
+
+
+
+x <- c("Y_transl", "Big", "180_rot", "90_rot", "X_sym", "Shape", "X_transl")
+
+ind <- seq(1, nrow(plotdata), by=2)
+
+plotdata_sub <- plotdata[ind, ]
+
+
+# append CI of the proportions 
+
+plotdata_sub$n <- 122
+
+plotdata_sub$SE <- sqrt((plotdata_sub$pct*(1-plotdata_sub$pct))/plotdata_sub$n)
+plotdata_sub$CI <- 1.96 * plotdata_sub$SE
+
+
+
+
+
+library(scales)
+theme_set(theme_light(base_size = 12, base_family = "Poppins"))
+
+pvalues_x <- c(1:7)
+pvalues <- c("p = .001", "p < .001", rep("p < .001",5))
+
+
+g<- ggplot(plotdata, 
+       aes(x = Transformation,
+           y = pct,
+           fill = selection_rec)) +
+  geom_bar(stat = "identity",
+           position = "fill") +
+  scale_y_continuous(limits = seq(0, 2),
+                     breaks = seq(0, 1, .25),
+                     expand = c(0,0),
+                     label = percent) +
+  coord_cartesian(xlim =c(1, 7), ylim = c(0, 1.1))+
+  #coord_cartesian(clip = "off")+
+  geom_text(aes(label = lbl), 
+            size = 4.5,
+            position = position_stack(vjust = 0.5)) +
+  scale_fill_brewer(palette = "Pastel1") +
+  labs(y = "Percentage", 
+       fill = "Selected Object",
+       x = "Type of Transformation",
+       title = "Results Exp. 1b (N = 854): 3D Context")+
+  annotate(geom = "hline",yintercept = 0.5, y = 0.5, color = "black", size = 1, linetype='dotted')+
+  annotate("pointrange", x = plotdata_sub$Transformation, y = 1 - plotdata_sub$pct, 
+           ymin = 1 - plotdata_sub$pct - plotdata_sub$CI, 
+           ymax = 1- plotdata_sub$pct + plotdata_sub$CI, 
+           colour = "black", size = 0.8, shape = 22, fill = "lightblue", fatten = 1)+
+  annotate("text", x = pvalues_x, y = Inf, label = pvalues, size = 4, vjust = 1.8)+
+  theme(legend.position = "top", axis.title = element_text(size = 15), axis.text = element_text(size = 13, color = "black"),
+        legend.text = element_text(size = 13),legend.title = element_text(size = 13))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+g
+#ggsave("selections_within.pdf",width=6,height=5)
+#ggsave("selections_within.svg",width=6,height=5)
+```
+
+## Plot Results of Exp. 2
+
+```{r}
+
+tdata <- tdata_manip
+
+# declare factors and their levels 
+#$Dimensions <- factor(tdata$Dimensions, levels = c("3D", "2D"), labels = c("3D", "2D"))
+
+tdata$Transformation <- factor(tdata$Transformation, levels = c("Small", "Angle", "90_rot", "180_rot", "X_sym", "Y_transl", "X_transl"), 
+                               labels = c("Size", "Shape", "90-Rot.", "180-Rot.", "X-Sym.", "Y-Tran.","X-Tran."))
+
+tdata$Side <- factor(tdata$Side, levels = c("left", "right"), labels = c("left", "right"))
+
+
+# recode responses so that 1 = first, 2 = second, 3 = both
+tdata$selection_rec <- c(1:length(tdata$sID))
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 1] <- "symm"
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 2] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 1] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 2] <- "symm"
+
+
+
+#tdata_strength <-  tdata_strength %>% gather(Entity, Strength, g1:g3, factor_key=TRUE)
+
+
+tdata$selection_rec <- factor(tdata$selection_rec, levels = c("symm", "non-symm"), labels = c("Y-Symm.", "Not-Y-Symm."))
+
+
+```
+
+
+
+
+```{r}
+# create a summary dataset that also contains the percentages
+plotdata_2d <- tdata %>%
+  group_by(Transformation, selection_rec) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+
+
+```
+
+
+```{r, echo = FALSE}
+
+plotdata <- plotdata_2d
+
+
+
+theme_set(theme_light(base_size = 20, base_family = "Poppins"))
+
+
+
+x <- c("Y_transl", "Big", "180_rot", "90_rot", "X_sym", "Shape", "X_transl")
+
+ind <- seq(1, nrow(plotdata), by=2)
+
+plotdata_sub <- plotdata[ind, ]
+
+
+# append CI of the proportions 
+
+plotdata_sub$n <- 124
+
+plotdata_sub$SE <- sqrt((plotdata_sub$pct*(1-plotdata_sub$pct))/plotdata_sub$n)
+plotdata_sub$CI <- 1.96 * plotdata_sub$SE
+
+
+library(scales)
+theme_set(theme_light(base_size = 12, base_family = "Poppins"))
+
+pvalues_x <- c(1:7)
+pvalues <- c("p < .001", "p < .127", "p < .001", "p < .001", "p < .001", "p = .127", "p = 1.0")
+
+
+g<- ggplot(plotdata, 
+       aes(x = Transformation,
+           y = pct,
+           fill = selection_rec)) +
+  geom_bar(stat = "identity",
+           position = "fill") +
+  scale_y_continuous(limits = seq(0, 2),
+                     breaks = seq(0, 1, .25),
+                     expand = c(0,0),
+                     label = percent) +
+  coord_cartesian(xlim =c(1, 7), ylim = c(0, 1.1))+
+  #coord_cartesian(clip = "off")+
+  geom_text(aes(label = lbl), 
+            size = 4.5,
+            position = position_stack(vjust = 0.5)) +
+  scale_fill_brewer(palette = "Pastel1") +
+  labs(y = "Percentage", 
+       fill = "Selected Object",
+       x = "Type of Transformation",
+       title = "Results Exp. 2 (N = 868): 3D with Manip.")+
+  annotate(geom = "hline",yintercept = 0.5, y = 0.5, color = "black", size = 1, linetype='dotted')+
+  annotate("pointrange", x = plotdata_sub$Transformation, y = 1 - plotdata_sub$pct, 
+           ymin = 1 - plotdata_sub$pct - plotdata_sub$CI, 
+           ymax = 1- plotdata_sub$pct + plotdata_sub$CI, 
+           colour = "black", size = 0.8, shape = 22, fill = "lightblue", fatten = 1)+
+  annotate("text", x = pvalues_x, y = Inf, label = pvalues, size = 4, vjust = 1.8)+
+  theme(legend.position = "top", axis.title = element_text(size = 15), axis.text = element_text(size = 13, color = "black"),
+        legend.text = element_text(size = 13),legend.title = element_text(size = 13))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+        
+g
+#ggsave("selections_3d_manip.pdf",width=6,height=5)
+#ggsave("selections_2d.svg",width=6,height=5)
+```
+
+
+## Plot Results of Exp. 3
+
+
+```{r}
+
+tdata <- tdata_2d
+
+# declare factors and their levels 
+tdata$Dimensions <- factor(tdata$Dimensions, levels = c("3D", "2D"), labels = c("3D", "2D"))
+
+tdata$Transformation <- factor(tdata$Transformation, levels = c("Small", "Angle", "90_rot", "180_rot", "X_sym", "Y_transl", "X_transl"), 
+                               labels = c("Size", "Shape", "90-Rot.", "180-Rot.", "X-Sym.", "Y-Tran.","X-Tran."))
+
+tdata$Side <- factor(tdata$Side, levels = c("left", "right"), labels = c("left", "right"))
+
+
+# recode responses so that 1 = first, 2 = second, 3 = both
+tdata$selection_rec <- c(1:length(tdata$sID))
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 1] <- "symm"
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 2] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 1] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 2] <- "symm"
+
+
+
+#tdata_strength <-  tdata_strength %>% gather(Entity, Strength, g1:g3, factor_key=TRUE)
+
+
+tdata$selection_rec <- factor(tdata$selection_rec, levels = c("symm", "non-symm"), labels = c("Y-Symm.", "Not-Y-Symm."))
+
+
+```
+
+
+
+
+```{r}
+# create a summary dataset that also contains the percentages
+plotdata_2d <- tdata %>%
+  group_by(Dimensions, Transformation, selection_rec) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+
+
+```
+
+
+```{r, echo = FALSE}
+
+plotdata <- plotdata_2d
+
+
+
+theme_set(theme_light(base_size = 20, base_family = "Poppins"))
+
+
+
+x <- c("Y_transl", "Big", "180_rot", "90_rot", "X_sym", "Shape", "X_transl")
+
+ind <- seq(1, nrow(plotdata), by=2)
+
+plotdata_sub <- plotdata[ind, ]
+
+
+# append CI of the proportions 
+
+plotdata_sub$n <- 122
+
+plotdata_sub$SE <- sqrt((plotdata_sub$pct*(1-plotdata_sub$pct))/plotdata_sub$n)
+plotdata_sub$CI <- 1.96 * plotdata_sub$SE
+
+
+library(scales)
+theme_set(theme_light(base_size = 12, base_family = "Poppins"))
+
+pvalues_x <- c(1:7)
+pvalues <- c("p = .928", "p <.001", "p < .001", "p < .005", "p = .123", "p = .037", "p = .415")
+
+
+g<- ggplot(plotdata, 
+       aes(x = Transformation,
+           y = pct,
+           fill = selection_rec)) +
+  geom_bar(stat = "identity",
+           position = "fill") +
+  scale_y_continuous(limits = seq(0, 2),
+                     breaks = seq(0, 1, .25),
+                     expand = c(0,0),
+                     label = percent) +
+  coord_cartesian(xlim =c(1, 7), ylim = c(0, 1.1))+
+  #coord_cartesian(clip = "off")+
+  geom_text(aes(label = lbl), 
+            size = 4.5,
+            position = position_stack(vjust = 0.5)) +
+  scale_fill_brewer(palette = "Pastel1") +
+  labs(y = "Percentage", 
+       fill = "Selected Object",
+       x = "Type of Transformation",
+       title = "Results Exp. 3 (N = 854): 2D Context")+
+  annotate(geom = "hline",yintercept = 0.5, y = 0.5, color = "black", size = 1, linetype='dotted')+
+  annotate("pointrange", x = plotdata_sub$Transformation, y = 1 - plotdata_sub$pct, 
+           ymin = 1 - plotdata_sub$pct - plotdata_sub$CI, 
+           ymax = 1- plotdata_sub$pct + plotdata_sub$CI, 
+           colour = "black", size = 0.8, shape = 22, fill = "lightblue", fatten = 1)+
+  annotate("text", x = pvalues_x, y = Inf, label = pvalues, size = 4, vjust = 1.8)+
+  theme(legend.position = "top", axis.title = element_text(size = 15), axis.text = element_text(size = 13, color = "black"),
+        legend.text = element_text(size = 13),legend.title = element_text(size = 13))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+        
+g
+#ggsave("selections_2d.pdf",width=6,height=5)
+#ggsave("selections_2d.svg",width=6,height=5)
+```
+
+
+
+
+# Main effect of Dimensions
+
+
+## Exp 1a
+
+```{r}
+
+tdata <- tdata_between
+
+# declare factors and their levels 
+tdata$Dimensions <- factor(tdata$Dimensions, levels = c("3D", "2D"), labels = c("3D", "2D"))
+
+tdata$Transformation <- factor(tdata$Transformation, levels = c("Small", "Angle", "90_rot", "180_rot", "X_sym", "Y_transl", "X_transl"), 
+                               labels = c("Size", "Shape", "90-Rot.", "180-Rot.", "X-Sym.", "Y-Tran.","X-Tran."))
+
+tdata$Side <- factor(tdata$Side, levels = c("left", "right"), labels = c("left", "right"))
+
+
+# recode responses so that 1 = first, 2 = second, 3 = both
+tdata$selection_rec <- c(1:length(tdata$sID))
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 1] <- "symm"
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 2] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 1] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 2] <- "symm"
+
+
+
+#tdata_strength <-  tdata_strength %>% gather(Entity, Strength, g1:g3, factor_key=TRUE)
+
+ 
+tdata$selection_rec <- factor(tdata$selection_rec, levels = c("symm", "non-symm"), labels = c("Y-Symm.", "Not-Y-Symm."))
+
+
+```
+
+
+
+
+```{r}
+# create a summary dataset that also contains the percentages
+plotdata_between <- tdata %>%
+  group_by(Dimensions, selection_rec) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+
+
+```
+
+
+```{r, echo = FALSE}
+
+plotdata <- plotdata_between
+
+
+
+theme_set(theme_light(base_size = 20, base_family = "Poppins"))
+
+
+
+x <- c("Y_transl", "Big", "180_rot", "90_rot", "X_sym", "Shape", "X_transl")
+
+ind <- seq(1, nrow(plotdata), by=2)
+
+plotdata_sub <- plotdata[ind, ]
+
+
+# append CI of the proportions 
+
+plotdata_sub$n <- 854
+
+plotdata_sub$SE <- sqrt((plotdata_sub$pct*(1-plotdata_sub$pct))/plotdata_sub$n)
+plotdata_sub$CI <- 1.96 * plotdata_sub$SE
+
+
+
+barchart <- ggplot(plotdata_sub, aes(x=Transformation, y=pct))+
+  myTheme+
+  ggtitle("Proportions (95% CIs) of subjects selecting the non-symmetrical object (N = 854)") +
+  scale_y_continuous(limits = c(0, 1), breaks=seq(0, 1, 0.10), expand = c(0,0)) +
+  scale_x_discrete(labels=c("Y-transl.", "Homoth.", "180-rot.", "90-rot.", "X-sym.", "Shape", "X-transl.")) +
+  labs(x= "Transformation", y = "Proportion") +
+  annotate(geom = "hline",yintercept = 0.5, y = 0.5, color = "red", size = 1.2)+
+  annotate("pointrange", x = plotdata_sub$Transformation, y = plotdata_sub$pct, ymin = plotdata_sub$pct - plotdata_sub$CI, 
+           ymax = plotdata_sub$pct + plotdata_sub$CI, 
+           colour = "black", size = 1, shape = 22, fill = "lightblue")
+
+
+#prop_data_wide$CI
+
+
+```
+
+
+
+```{r}
+
+library(scales)
+theme_set(theme_light(base_size = 12, base_family = "Poppins"))
+
+g<- ggplot(plotdata, 
+       aes(x = "3D (between)",
+           y = pct,
+           fill = selection_rec)) +
+  geom_bar(stat = "identity",
+           position = "fill") +
+  scale_y_continuous(breaks = seq(0, 1, .25), 
+                     label = percent) +
+  geom_text(aes(label = lbl), 
+            size = 4, 
+            position = position_stack(vjust = 0.5)) +
+  scale_fill_brewer(palette = "Pastel1") +
+  labs(y = "Percentage", 
+       fill = "Selec. Obj.",
+       x = "Test condition",
+       title = "3D Context a (N = 854)")+
+  annotate(geom = "hline",yintercept = 0.5, y = 0.5, color = "black", size = 1, linetype='dotted')+
+  annotate("pointrange", x = 1, y = 1 - plotdata_sub$pct, 
+           ymin = 1 - plotdata_sub$pct - plotdata_sub$CI, 
+           ymax = 1- plotdata_sub$pct + plotdata_sub$CI, 
+           colour = "black", size = 0.8, shape = 22, fill = "lightblue", fatten = 1)+
+  theme(legend.position = "top", axis.title = element_text(size = 15), axis.text = element_text(size = 13, color = "black"),
+        legend.text = element_text(size = 13))
+        
+g
+#ggsave("selections_between_main.pdf",width=3.5,height=5)
+#ggsave("selections_between_main.svg",width=3.5,height=5)
+```
+
+## Exp. 1b
+
+```{r}
+
+tdata <- tdata_within
+
+# declare factors and their levels 
+tdata$Dimensions <- factor(tdata$Dimensions, levels = c("3D", "2D"), labels = c("3D", "2D"))
+
+tdata$Transformation <- factor(tdata$Transformation, levels = c("Small", "Angle", "90_rot", "180_rot", "X_sym", "Y_transl", "X_transl"), 
+                               labels = c("Size", "Shape", "90-Rot.", "180-Rot.", "X-Sym.", "Y-Tran.","X-Tran."))
+
+tdata$Side <- factor(tdata$Side, levels = c("left", "right"), labels = c("left", "right"))
+
+
+# recode responses so that 1 = first, 2 = second, 3 = both
+tdata$selection_rec <- c(1:length(tdata$sID))
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 1] <- "symm"
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 2] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 1] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 2] <- "symm"
+
+
+
+#tdata_strength <-  tdata_strength %>% gather(Entity, Strength, g1:g3, factor_key=TRUE)
+
+ 
+tdata$selection_rec <- factor(tdata$selection_rec, levels = c("symm", "non-symm"), labels = c("Y-Symm.", "Not-Y-Symm."))
+
+
+```
+
+
+
+```{r}
+# create a summary dataset that also contains the percentages
+plotdata_within <- tdata %>%
+  group_by(Dimensions, selection_rec) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+
+
+```
+
+```{r, echo = FALSE}
+
+plotdata <- plotdata_within
+
+
+
+
+theme_set(theme_light(base_size = 20, base_family = "Poppins"))
+
+
+
+x <- c("Y_transl", "Big", "180_rot", "90_rot", "X_sym", "Shape", "X_transl")
+
+ind <- seq(1, nrow(plotdata), by=2)
+
+plotdata_sub <- plotdata[ind, ]
+
+
+# append CI of the proportions 
+
+plotdata_sub$n <- 854
+
+plotdata_sub$SE <- sqrt((plotdata_sub$pct*(1-plotdata_sub$pct))/plotdata_sub$n)
+plotdata_sub$CI <- 1.96 * plotdata_sub$SE
+
+
+
+barchart <- ggplot(plotdata_sub, aes(x=Transformation, y=pct))+
+  myTheme+
+  ggtitle("Proportions (95% CIs) of subjects selecting the non-symmetrical object (N = 854)") +
+  scale_y_continuous(limits = c(0, 1), breaks=seq(0, 1, 0.10), expand = c(0,0)) +
+  scale_x_discrete(labels=c("Y-transl.", "Homoth.", "180-rot.", "90-rot.", "X-sym.", "Shape", "X-transl.")) +
+  labs(x= "Transformation", y = "Proportion") +
+  annotate(geom = "hline",yintercept = 0.5, y = 0.5, color = "red", size = 1.2)+
+  annotate("pointrange", x = plotdata_sub$Transformation, y = plotdata_sub$pct, ymin = plotdata_sub$pct - plotdata_sub$CI, 
+           ymax = plotdata_sub$pct + plotdata_sub$CI, 
+           colour = "black", size = 1, shape = 22, fill = "lightblue")
+
+```
+
+
+```{r}
+library(scales)
+theme_set(theme_light(base_size = 12, base_family = "Poppins"))
+
+g<- ggplot(plotdata, 
+       aes(x = "3D (within)",
+           y = pct,
+           fill = selection_rec)) +
+  geom_bar(stat = "identity",
+           position = "fill") +
+  scale_y_continuous(breaks = seq(0, 1, .25), 
+                     label = percent) +
+  geom_text(aes(label = lbl), 
+            size = 4, 
+            position = position_stack(vjust = 0.5)) +
+  scale_fill_brewer(palette = "Pastel1") +
+  labs(y = "Percentage", 
+       fill = "Selec. Obj.",
+       x = "Test condition",
+       title = "3D Context b (N = 854)")+
+  annotate(geom = "hline",yintercept = 0.5, y = 0.5, color = "black", size = 1, linetype='dotted')+
+  annotate("pointrange", x = 1, y = 1 - plotdata_sub$pct, 
+           ymin = 1 - plotdata_sub$pct - plotdata_sub$CI, 
+           ymax = 1- plotdata_sub$pct + plotdata_sub$CI, 
+           colour = "black", size = 0.8, shape = 22, fill = "lightblue", fatten = 1)+
+  theme(legend.position = "top", axis.title = element_text(size = 15), axis.text = element_text(size = 13, color = "black"),
+        legend.text = element_text(size = 13))
+        
+g
+#ggsave("selections_within_main.pdf",width=3.5,height=5)
+#ggsave("selections_within_main.svg",width=3.5,height=5)
+```
+
+
+## Exp. 2
+
+```{r}
+
+tdata <- tdata_manip
+
+# declare factors and their levels 
+#tdata$Dimensions <- factor(tdata$Dimensions, levels = c("3D", "2D"), labels = c("3D", "2D"))
+
+tdata$Transformation <- factor(tdata$Transformation, levels = c("Small", "Angle", "90_rot", "180_rot", "X_sym", "Y_transl", "X_transl"), 
+                               labels = c("Size", "Shape", "90-Rot.", "180-Rot.", "X-Sym.", "Y-Tran.","X-Tran."))
+
+tdata$Side <- factor(tdata$Side, levels = c("left", "right"), labels = c("left", "right"))
+
+
+# recode responses so that 1 = first, 2 = second, 3 = both
+tdata$selection_rec <- c(1:length(tdata$sID))
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 1] <- "symm"
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 2] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 1] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 2] <- "symm"
+
+
+
+#tdata_strength <-  tdata_strength %>% gather(Entity, Strength, g1:g3, factor_key=TRUE)
+
+ 
+tdata$selection_rec <- factor(tdata$selection_rec, levels = c("symm", "non-symm"), labels = c("Y-Symm.", "Not-Y-Symm."))
+
+
+```
+
+
+
+```{r}
+# create a summary dataset that also contains the percentages
+plotdata_within <- tdata %>%
+  group_by(selection_rec) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+
+
+```
+
+
+```{r, echo = FALSE}
+
+plotdata <- plotdata_within
+
+
+
+
+theme_set(theme_light(base_size = 20, base_family = "Poppins"))
+
+
+
+x <- c("Y_transl", "Big", "180_rot", "90_rot", "X_sym", "Shape", "X_transl")
+
+ind <- seq(1, nrow(plotdata), by=2)
+
+plotdata_sub <- plotdata[ind, ]
+
+
+# append CI of the proportions 
+
+plotdata_sub$n <- 868
+
+plotdata_sub$SE <- sqrt((plotdata_sub$pct*(1-plotdata_sub$pct))/plotdata_sub$n)
+plotdata_sub$CI <- 1.96 * plotdata_sub$SE
+
+
+
+barchart <- ggplot(plotdata_sub, aes(x=Transformation, y=pct))+
+  myTheme+
+  ggtitle("Proportions (95% CIs) of subjects selecting the non-symmetrical object (N = 854)") +
+  scale_y_continuous(limits = c(0, 1), breaks=seq(0, 1, 0.10), expand = c(0,0)) +
+  scale_x_discrete(labels=c("Y-transl.", "Homoth.", "180-rot.", "90-rot.", "X-sym.", "Shape", "X-transl.")) +
+  labs(x= "Transformation", y = "Proportion") +
+  annotate(geom = "hline",yintercept = 0.5, y = 0.5, color = "red", size = 1.2)+
+  annotate("pointrange", x = plotdata_sub$Transformation, y = plotdata_sub$pct, ymin = plotdata_sub$pct - plotdata_sub$CI, 
+           ymax = plotdata_sub$pct + plotdata_sub$CI, 
+           colour = "black", size = 1, shape = 22, fill = "lightblue")
+
+```
+
+
+```{r}
+library(scales)
+theme_set(theme_light(base_size = 12, base_family = "Poppins"))
+
+g<- ggplot(plotdata, 
+       aes(x = "3D with manipul. obj.",
+           y = pct,
+           fill = selection_rec)) +
+  geom_bar(stat = "identity",
+           position = "fill") +
+  scale_y_continuous(breaks = seq(0, 1, .25), 
+                     label = percent) +
+  geom_text(aes(label = lbl), 
+            size = 4, 
+            position = position_stack(vjust = 0.5)) +
+  scale_fill_brewer(palette = "Pastel1") +
+  labs(y = "Percentage", 
+       fill = "Selec. Obj.",
+       x = "Test condition",
+       title = "3D Context c (N = 868)")+
+  annotate(geom = "hline",yintercept = 0.5, y = 0.5, color = "black", size = 1, linetype='dotted')+
+  annotate("pointrange", x = 1, y = 1 - plotdata_sub$pct, 
+           ymin = 1 - plotdata_sub$pct - plotdata_sub$CI, 
+           ymax = 1- plotdata_sub$pct + plotdata_sub$CI, 
+           colour = "black", size = 0.8, shape = 22, fill = "lightblue", fatten = 1)+
+  theme(legend.position = "top", axis.title = element_text(size = 15), axis.text = element_text(size = 13, color = "black"),
+        legend.text = element_text(size = 13))
+        
+g
+#ggsave("selections_within_main.pdf",width=3.5,height=5)
+#ggsave("selections_within_main.svg",width=3.5,height=5)
+```
+
+
+## Exp. 3
+
+```{r}
+
+tdata <- tdata_2d
+
+# declare factors and their levels 
+tdata$Dimensions <- factor(tdata$Dimensions, levels = c("3D", "2D"), labels = c("3D", "2D"))
+
+tdata$Transformation <- factor(tdata$Transformation, levels = c("Small", "Angle", "90_rot", "180_rot", "X_sym", "Y_transl", "X_transl"), 
+                               labels = c("Size", "Shape", "90-Rot.", "180-Rot.", "X-Sym.", "Y-Tran.","X-Tran."))
+
+tdata$Side <- factor(tdata$Side, levels = c("left", "right"), labels = c("left", "right"))
+
+
+# recode responses so that 1 = first, 2 = second, 3 = both
+tdata$selection_rec <- c(1:length(tdata$sID))
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 1] <- "symm"
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 2] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 1] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 2] <- "symm"
+
+
+
+#tdata_strength <-  tdata_strength %>% gather(Entity, Strength, g1:g3, factor_key=TRUE)
+
+ 
+tdata$selection_rec <- factor(tdata$selection_rec, levels = c("symm", "non-symm"), labels = c("Y-Symm.", "Not-Y-Symm."))
+
+
+```
+
+
+```{r}
+# create a summary dataset that also contains the percentages
+plotdata_2d <- tdata %>%
+  group_by(Dimensions, selection_rec) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+
+
+```
+
+```{r, echo = FALSE}
+
+plotdata <- plotdata_2d
+
+
+
+theme_set(theme_light(base_size = 20, base_family = "Poppins"))
+
+
+
+x <- c("Y_transl", "Big", "180_rot", "90_rot", "X_sym", "Shape", "X_transl")
+
+ind <- seq(1, nrow(plotdata), by=2)
+
+plotdata_sub <- plotdata[ind, ]
+
+
+# append CI of the proportions 
+
+plotdata_sub$n <- 854
+
+plotdata_sub$SE <- sqrt((plotdata_sub$pct*(1-plotdata_sub$pct))/plotdata_sub$n)
+plotdata_sub$CI <- 1.96 * plotdata_sub$SE
+
+
+
+
+#prop_data_wide$CI
+
+
+```
+
+
+```{r}
+library(scales)
+theme_set(theme_light(base_size = 12, base_family = "Poppins"))
+
+g<- ggplot(plotdata, 
+       aes(x = Dimensions,
+           y = pct,
+           fill = selection_rec)) +
+  geom_bar(stat = "identity",
+           position = "fill") +
+  scale_y_continuous(breaks = seq(0, 1, .25), 
+                     label = percent) +
+  geom_text(aes(label = lbl), 
+            size = 4, 
+            position = position_stack(vjust = 0.5)) +
+  scale_fill_brewer(palette = "Pastel1") +
+  labs(y = "Percentage", 
+       fill = "Selec. Obj.",
+       x = "Dimensions",
+       title = "2D Context (N = 854)")+
+  annotate(geom = "hline",yintercept = 0.5, y = 0.5, color = "black", size = 1, linetype='dotted')+
+  annotate("pointrange", x = 1, y = 1 - plotdata_sub$pct, 
+           ymin = 1 - plotdata_sub$pct - plotdata_sub$CI, 
+           ymax = 1- plotdata_sub$pct + plotdata_sub$CI, 
+           colour = "black", size = 0.8, shape = 22, fill = "lightblue", fatten = 1)+
+  theme(legend.position = "top", axis.title = element_text(size = 15), axis.text = element_text(size = 13, color = "black"),
+        legend.text = element_text(size = 13))
+        
+g
+#ggsave("selections_2d_main.pdf",width=3.5,height=5)
+#ggsave("selections_2d_main.svg",width=3.5,height=5)
+```
+
+
+Merge all in one data frame (main effect of dimensions)
+
+```{r}
+
+tdata <- tdata_between
+
+# declare factors and their levels 
+tdata$Dimensions <- factor(tdata$Dimensions, levels = c("3D", "2D"), labels = c("3Da", "2D"))
+
+tdata$Transformation <- factor(tdata$Transformation, levels = c("Small", "Angle", "90_rot", "180_rot", "X_sym", "Y_transl", "X_transl"), 
+                               labels = c("Size", "Shape", "90-Rot.", "180-Rot.", "X-Sym.", "Y-Tran.","X-Tran."))
+
+tdata$Side <- factor(tdata$Side, levels = c("left", "right"), labels = c("left", "right"))
+
+
+# recode responses so that 1 = first, 2 = second, 3 = both
+tdata$selection_rec <- c(1:length(tdata$sID))
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 1] <- "symm"
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 2] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 1] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 2] <- "symm"
+
+
+
+#tdata_strength <-  tdata_strength %>% gather(Entity, Strength, g1:g3, factor_key=TRUE)
+
+ 
+tdata$selection_rec <- factor(tdata$selection_rec, levels = c("symm", "non-symm"), labels = c("Y-Symm.", "Not-Y-Symm."))
+
+tdata_b <- tdata
+
+```
+
+
+
+```{r}
+
+tdata <- tdata_within
+
+# declare factors and their levels 
+tdata$Dimensions <- factor(tdata$Dimensions, levels = c("3D", "2D"), labels = c("3Db", "2D"))
+
+tdata$Transformation <- factor(tdata$Transformation, levels = c("Small", "Angle", "90_rot", "180_rot", "X_sym", "Y_transl", "X_transl"), 
+                               labels = c("Size", "Shape", "90-Rot.", "180-Rot.", "X-Sym.", "Y-Tran.","X-Tran."))
+
+tdata$Side <- factor(tdata$Side, levels = c("left", "right"), labels = c("left", "right"))
+
+
+# recode responses so that 1 = first, 2 = second, 3 = both
+tdata$selection_rec <- c(1:length(tdata$sID))
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 1] <- "symm"
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 2] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 1] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 2] <- "symm"
+
+
+
+#tdata_strength <-  tdata_strength %>% gather(Entity, Strength, g1:g3, factor_key=TRUE)
+
+ 
+tdata$selection_rec <- factor(tdata$selection_rec, levels = c("symm", "non-symm"), labels = c("Y-Symm.", "Not-Y-Symm."))
+
+tdata_w <- tdata
+```
+
+
+
+
+```{r}
+
+tdata <- tdata_2d
+
+# declare factors and their levels 
+tdata$Dimensions <- factor(tdata$Dimensions, levels = c("3D", "2D"), labels = c("3D", "2D"))
+
+tdata$Transformation <- factor(tdata$Transformation, levels = c("Small", "Angle", "90_rot", "180_rot", "X_sym", "Y_transl", "X_transl"), 
+                               labels = c("Size", "Shape", "90-Rot.", "180-Rot.", "X-Sym.", "Y-Tran.","X-Tran."))
+
+tdata$Side <- factor(tdata$Side, levels = c("left", "right"), labels = c("left", "right"))
+
+
+# recode responses so that 1 = first, 2 = second, 3 = both
+tdata$selection_rec <- c(1:length(tdata$sID))
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 1] <- "symm"
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 2] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 1] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 2] <- "symm"
+
+
+
+#tdata_strength <-  tdata_strength %>% gather(Entity, Strength, g1:g3, factor_key=TRUE)
+
+ 
+tdata$selection_rec <- factor(tdata$selection_rec, levels = c("symm", "non-symm"), labels = c("Y-Symm.", "Not-Y-Symm."))
+
+tdata_2 <- tdata
+
+```
+
+
+
+```{r}
+
+tdata <- tdata_manip
+
+# declare factors and their levels 
+#tdata$Dimensions <- factor(tdata$Dimensions, levels = c("3D", "2D"), labels = c("3D", "2D"))
+
+tdata$Transformation <- factor(tdata$Transformation, levels = c("Small", "Angle", "90_rot", "180_rot", "X_sym", "Y_transl", "X_transl"), 
+                               labels = c("Size", "Shape", "90-Rot.", "180-Rot.", "X-Sym.", "Y-Tran.","X-Tran."))
+
+tdata$Side <- factor(tdata$Side, levels = c("left", "right"), labels = c("left", "right"))
+
+
+# recode responses so that 1 = first, 2 = second, 3 = both
+tdata$selection_rec <- c(1:length(tdata$sID))
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 1] <- "symm"
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 2] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 1] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 2] <- "symm"
+
+
+
+#tdata_strength <-  tdata_strength %>% gather(Entity, Strength, g1:g3, factor_key=TRUE)
+
+ 
+tdata$selection_rec <- factor(tdata$selection_rec, levels = c("symm", "non-symm"), labels = c("Y-Symm.", "Not-Y-Symm."))
+
+tdata_man <- tdata
+
+tdata_man$Side_initial<- c("3D manip.")
+tdata_man <- subset(tdata_man, select = c(1,3,4:10,12:13))
+
+colnames(tdata_man)[2] <- "Dimensions"
+
+```
+
+
+
+```{r}
+# combined data frame 
+total <- rbind(tdata_b, tdata_w, tdata_man, tdata_2)
+
+total$Dimensions <- factor(total$Dimensions, levels = c("3Da", "3Db", "3D manip.", "2D"), labels = c("3Da", "3Db", "3Dc", "2D"))
+
+
+```
+
+
+```{r}
+# create a summary dataset that also contains the percentages
+plotdata_total <- total %>%
+  group_by(Dimensions, selection_rec) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+
+
+```
+
+
+
+```{r, echo = FALSE}
+plotdata <- plotdata_total
+
+x <- c("Y_transl", "Big", "180_rot", "90_rot", "X_sym", "Shape", "X_transl")
+
+ind <- seq(1, nrow(plotdata), by=2)
+
+plotdata_sub <- plotdata[ind, ]
+
+
+# append CI of the proportions 
+
+plotdata_sub$n <- 854
+
+plotdata_sub$SE <- sqrt((plotdata_sub$pct*(1-plotdata_sub$pct))/plotdata_sub$n)
+plotdata_sub$CI <- 1.96 * plotdata_sub$SE
+```
+
+
+## Plot all in one
+
+```{r}
+library(scales)
+theme_set(theme_light(base_size = 10, base_family = "Poppins"))
+
+g<- ggplot(plotdata, 
+       aes(x = Dimensions,
+           y = pct,
+           fill = selection_rec)) +
+  geom_bar(stat = "identity",
+           position = "fill") +
+  scale_y_continuous(limits = seq(0, 2),
+                     breaks = seq(0, 1, .25),
+                     expand = c(0,0),
+                     label = percent) +
+  coord_cartesian(xlim =c(1, 4), ylim = c(0, 1.4))+
+  #coord_cartesian(clip = "off")+
+  geom_text(aes(label = lbl), 
+            size = 4, 
+            position = position_stack(vjust = 0.5)) +
+  scale_fill_brewer(palette = "Pastel1") +
+  labs(y = "Percentage", 
+       fill = "Selec. Obj.",
+       x = "Test condition",
+       title = "Subjects' Selections in \n3D vs. 2D Contexts (N = 3430)")+
+  #annotate(geom = "hline",yintercept = 0.5, y = 0.5, color = "black", size = 1, linetype='dotted')+
+  annotate("pointrange", x = c(1,2,3,4), y = 1 - plotdata_sub$pct, 
+           ymin = 1 - plotdata_sub$pct - plotdata_sub$CI, 
+           ymax = 1- plotdata_sub$pct + plotdata_sub$CI, 
+           colour = "black", size = 0.8, shape = 22, fill = "lightblue", fatten = 1)+
+  #annotate("text", x = 1.25, y = Inf, label = "p < .001", size = 4, vjust = 1.6)+
+  #annotate("text", x = 2.35, y = Inf, label = "p = .09", size = 4, vjust = 4)+
+  theme(legend.position = "top", axis.title = element_text(size = 10), axis.text = element_text(size = 13, color = "black"),
+        legend.text = element_text(size = 10),legend.title = element_text(size = 11))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+g
+#ggsave("selections_Dim.pdf",width=4,height=5)
+#ggsave("selections_Dim.svg",width=6,height=4)
+```
+
+
+# Testing the proportions against chance
+
+## Experiment 1a
+
+```{r}
+
+tdata <- tdata_between
+
+# declare factors and their levels 
+tdata$Dimensions <- factor(tdata$Dimensions, levels = c("3D", "2D"), labels = c("3D", "2D"))
+
+tdata$Transformation <- factor(tdata$Transformation, levels = c("Small", "Angle", "90_rot", "180_rot", "X_sym", "Y_transl", "X_transl"), 
+                               labels = c("Size", "Shape", "90-Rot.", "180-Rot.", "X-Sym.", "Y-Tran.","X-Tran."))
+
+tdata$Side <- factor(tdata$Side, levels = c("left", "right"), labels = c("left", "right"))
+
+
+# recode responses so that 1 = first, 2 = second, 3 = both
+tdata$selection_rec <- c(1:length(tdata$sID))
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 1] <- "symm"
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 2] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 1] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 2] <- "symm"
+
+
+
+#tdata_strength <-  tdata_strength %>% gather(Entity, Strength, g1:g3, factor_key=TRUE)
+
+ 
+tdata$selection_rec <- factor(tdata$selection_rec, levels = c("symm", "non-symm"), labels = c("Y-Symm.", "Not-Y-Symm."))
+
+
+```
+
+
+```{r}
+# create a summary dataset that also contains the percentages
+plotdata_between <- tdata %>%
+  group_by(Dimensions, Transformation, selection_rec) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+
+
+
+plotdata <- plotdata_between
+ind <- seq(1, nrow(plotdata), by=2)
+
+plotdata_sub <- plotdata[ind, ]
+
+
+```
+
+
+Binomial-Tests against Chance (50%)
+
+```{r}
+for (i in plotdata_sub$n){
+  print(binom.test(i, 122, p = 0.5, alternative = "two.sided"))
+}
+
+```
+
+
+## Experiment 1b
+
+```{r}
+
+tdata <- tdata_within
+
+# declare factors and their levels 
+tdata$Dimensions <- factor(tdata$Dimensions, levels = c("3D", "2D"), labels = c("3D", "2D"))
+
+tdata$Transformation <- factor(tdata$Transformation, levels = c("Small", "Angle", "90_rot", "180_rot", "X_sym", "Y_transl", "X_transl"), 
+                               labels = c("Size", "Shape", "90-Rot.", "180-Rot.", "X-Sym.", "Y-Tran.","X-Tran."))
+
+tdata$Side <- factor(tdata$Side, levels = c("left", "right"), labels = c("left", "right"))
+
+
+# recode responses so that 1 = first, 2 = second, 3 = both
+tdata$selection_rec <- c(1:length(tdata$sID))
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 1] <- "symm"
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 2] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 1] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 2] <- "symm"
+
+
+
+#tdata_strength <-  tdata_strength %>% gather(Entity, Strength, g1:g3, factor_key=TRUE)
+
+ 
+tdata$selection_rec <- factor(tdata$selection_rec, levels = c("symm", "non-symm"), labels = c("Y-Symm.", "Not-Y-Symm."))
+
+
+```
+
+
+
+```{r}
+# create a summary dataset that also contains the percentages
+plotdata_within <- tdata %>%
+  group_by(Dimensions, Transformation, selection_rec) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+
+
+
+plotdata <- plotdata_within
+ind <- seq(1, nrow(plotdata), by=2)
+
+plotdata_sub <- plotdata[ind, ]
+
+
+```
+Binomial-Tests against Chance (50%)
+
+```{r}
+for (i in plotdata_sub$n){
+  print(binom.test(i, 122, p = 0.5, alternative = "two.sided"))
+}
+```
+
+## Experiment 2 (3D with Manip.)
+
+```{r}
+
+tdata <- tdata_manip
+
+# declare factors and their levels 
+#tdata$Dimensions <- factor(tdata$Dimensions, levels = c("3D", "2D"), labels = c("3D", "2D"))
+
+tdata$Transformation <- factor(tdata$Transformation, levels = c("Small", "Angle", "90_rot", "180_rot", "X_sym", "Y_transl", "X_transl"), 
+                               labels = c("Size", "Shape", "90-Rot.", "180-Rot.", "X-Sym.", "Y-Tran.","X-Tran."))
+
+tdata$Side <- factor(tdata$Side, levels = c("left", "right"), labels = c("left", "right"))
+
+
+# recode responses so that 1 = first, 2 = second, 3 = both
+tdata$selection_rec <- c(1:length(tdata$sID))
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 1] <- "symm"
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 2] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 1] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 2] <- "symm"
+
+
+
+#tdata_strength <-  tdata_strength %>% gather(Entity, Strength, g1:g3, factor_key=TRUE)
+
+ 
+tdata$selection_rec <- factor(tdata$selection_rec, levels = c("symm", "non-symm"), labels = c("Y-Symm.", "Not-Y-Symm."))
+
+
+```
+
+
+
+
+```{r}
+# create a summary dataset that also contains the percentages
+plotdata_2d <- tdata %>%
+  group_by(Transformation, selection_rec) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+
+
+
+plotdata <- plotdata_2d
+ind <- seq(1, nrow(plotdata), by=2)
+
+plotdata_sub <- plotdata[ind, ]
+
+
+```
+Binomial-Tests against Chance (50%)
+
+```{r}
+for (i in plotdata_sub$n){
+  print(binom.test(i, 124, p = 0.5, alternative = "two.sided"))
+}
+
+```
+
+
+## Experiment 3 (2D)
+
+```{r}
+
+tdata <- tdata_2d
+
+# declare factors and their levels 
+tdata$Dimensions <- factor(tdata$Dimensions, levels = c("3D", "2D"), labels = c("3D", "2D"))
+
+tdata$Transformation <- factor(tdata$Transformation, levels = c("Small", "Angle", "90_rot", "180_rot", "X_sym", "Y_transl", "X_transl"), 
+                               labels = c("Size", "Shape", "90-Rot.", "180-Rot.", "X-Sym.", "Y-Tran.","X-Tran."))
+
+tdata$Side <- factor(tdata$Side, levels = c("left", "right"), labels = c("left", "right"))
+
+
+# recode responses so that 1 = first, 2 = second, 3 = both
+tdata$selection_rec <- c(1:length(tdata$sID))
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 1] <- "symm"
+tdata$selection_rec[tdata$Side =="left" & tdata$Value == 2] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 1] <- "non-symm"
+tdata$selection_rec[tdata$Side =="right" & tdata$Value == 2] <- "symm"
+
+
+
+#tdata_strength <-  tdata_strength %>% gather(Entity, Strength, g1:g3, factor_key=TRUE)
+
+ 
+tdata$selection_rec <- factor(tdata$selection_rec, levels = c("symm", "non-symm"), labels = c("Y-Symm.", "Not-Y-Symm."))
+
+
+```
+
+
+```{r}
+# create a summary dataset that also contains the percentages
+plotdata_2d <- tdata %>%
+  group_by(Dimensions, Transformation, selection_rec) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+
+
+
+plotdata <- plotdata_2d
+ind <- seq(1, nrow(plotdata), by=2)
+
+plotdata_sub <- plotdata[ind, ]
+
+
+```
+Binomial-Tests against Chance (50%)
+
+```{r}
+for (i in plotdata_sub$n){
+  print(binom.test(i, 122, p = 0.5, alternative = "two.sided"))
+}
+
+```
+
+
+
+
+
+Combined:
+
+
+```{r}
+# create a summary dataset that also contains the percentages
+plotdata_total <- total %>%
+  group_by(Dimensions, selection_rec) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+
+
+```
+
+```{r, echo = FALSE}
+plotdata <- plotdata_total
+
+x <- c("Y_transl", "Big", "180_rot", "90_rot", "X_sym", "Shape", "X_transl")
+
+ind <- seq(1, nrow(plotdata), by=2)
+
+plotdata_sub <- plotdata[ind, ]
+
+
+# append CI of the proportions 
+
+#plotdata_sub$n <- 854
+
+plotdata_sub$SE <- sqrt((plotdata_sub$pct*(1-plotdata_sub$pct))/plotdata_sub$n)
+plotdata_sub$CI <- 1.96 * plotdata_sub$SE
+```
+
+# Test the contexts against each other
+
+## Test 3Da against 3Db
+
+```{r}
+test3Da_3Db <- prop.test(x = c(plotdata_sub$n[1], plotdata_sub$n[2]), n = c(854, 854))
+test3Da_3Db
+```
+
+
+
+## Test 3Da against 3D with manip
+
+```{r}
+test3Da_3Dmanip <- prop.test(x = c(plotdata_sub$n[1], plotdata_sub$n[3]), n = c(854, 868))
+test3Da_3Dmanip
+```
+
+
+## Test 3Db against 3D with manip
+
+```{r}
+test3Db_3Dmanip <- prop.test(x = c(plotdata_sub$n[2], plotdata_sub$n[3]), n = c(854, 868))
+test3Db_3Dmanip
+```
+
+## Test 3D with manip against 2D
+
+```{r}
+test3Dmanip_2D <- prop.test(x = c(plotdata_sub$n[3], plotdata_sub$n[4]), n = c(868, 854))
+test3Dmanip_2D
+```
+
+
+

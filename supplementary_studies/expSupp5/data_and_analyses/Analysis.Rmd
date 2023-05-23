@@ -1,0 +1,1053 @@
+---
+title: "Analysis"
+output:  
+  html_document:
+    number_sections: true
+    toc: true  
+    collapsed: false
+    toc_float: true
+    smooth_scroll: false
+    toc_depth: 3
+    self_contained: yes
+---
+
+```{r, message = FALSE, echo = FALSE, warning=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+# packages
+library(ez)
+library(ggplot2)
+library(plyr)
+library(pastecs)
+library(ez)
+library(data.table)
+library(overlapping) # to compute the 
+library(tidyr)
+library(showtext)
+#install.packages("expss")
+library(expss)
+library(dplyr)
+
+font_add_google("Poppins", "Poppins")
+font_add_google("Roboto Mono", "Roboto Mono")
+showtext_auto()
+```
+
+
+
+
+
+```{r}
+# read data 
+library(readr)
+tdata <- read_csv("tdata_final.csv")
+```
+# Demographics
+
+```{r}
+table(tdata$gender) #%>% sum()
+
+#tdata$age <- as.numeric(tdata$age)
+
+mean(tdata$age)
+sd(tdata$age)
+min(tdata$age)
+max(tdata$age)
+```
+# Data handling
+
+```{r}
+
+# add a column that represents the transformations as a factor
+tdata$Transformation <- factor(tdata$test_stimulus, 
+                               levels = c("img/Left_Y_Symmetry_Big.svg",
+                                          "img/Left_Y_Symmetry_Angle.svg",
+                                          "img/Left_Y_Symmetry_X_Rotation.svg",
+                                          "img/Left_Y_Symmetry_X_Rotation_180.svg",
+                                          "img/Left_Y_Symmetry_X_Symmetry.svg",
+                                          "img/Left_Y_Symmetry_Y_Translation.svg",
+                                          "img/Left_Y_Symmetry_X_Translation.svg",
+                                          "img/Right_Y_Symmetry_Big.svg",
+                                          "img/Right_Y_Symmetry_Angle.svg",
+                                          "img/Right_Y_Symmetry_X_Rotation.svg",
+                                          "img/Right_Y_Symmetry_X_Rotation_180.svg",
+                                          "img/Right_Y_Symmetry_X_Symmetry.svg",
+                                          "img/Right_Y_Symmetry_Y_Translation.svg",
+                                          "img/Right_Y_Symmetry_X_Translation.svg"), 
+                               labels = c("Size", 
+                                          "Shape", 
+                                          "90-Rot.", 
+                                          "180-Rot.", 
+                                          "X-Refl.", 
+                                          "Y-Tran.",
+                                          "X-Tran.",
+                                          "Size", 
+                                          "Shape", 
+                                          "90-Rot.", 
+                                          "180-Rot.", 
+                                          "X-Refl.", 
+                                          "Y-Tran.",
+                                          "X-Tran."))
+
+
+# add another column that codes the side of the y-symm transformation as a factor
+tdata$Side <- factor(tdata$Ysym_side, levels = c("left", "right"), labels = c("left", "right"))
+
+
+
+tdata$selection_rec <- factor(tdata$dv_selection_rec, levels = c("Ysym", "None", "not-Ysym"), labels = c("Y-Refl.", "None", "Not-Y-Refl."))
+```
+
+```{r}
+table(tdata$condition)
+table(tdata$Transformation)
+```
+
+# Graphs
+
+```{r}
+# create a summary dataset that also contains the percentages
+
+plotdata_between <- tdata %>%
+  group_by(Transformation, selection_rec) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+
+
+
+plotdata_sub <- subset(plotdata_between, selection_rec == "Y-Refl.")
+
+
+```
+
+
+```{r, echo = FALSE}
+
+plotdata <- plotdata_between
+
+# create a theme to handle the design 
+myTheme <- theme(plot.title = element_text(face="bold", size = 16),
+        axis.title.x = element_text(face = "bold", size = 20),
+        axis.title.y = element_text(face = "bold", size = 20),
+        axis.text.x = element_text(size = 20, angle = 45, hjust = 1), 
+        axis.text.y = element_text(size = 18, angle = 0),
+        legend.text = element_text(size = 18),
+        legend.title = element_text(face = "bold", size = 18),
+        strip.text.x = element_text(size = 18),
+        #panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.background = element_blank(), 
+        axis.line.x = element_line(colour = "black"), 
+        axis.line.y = element_line(colour = "black"),
+        axis.text = element_text(colour ="black"), 
+        axis.ticks = element_line(colour ="black"))
+
+
+theme_set(theme_light(base_size = 20, base_family = "Poppins"))
+
+
+# append CI of the proportions 
+
+plotdata_sub$n <- 30
+
+plotdata_sub$SE <- sqrt((plotdata_sub$pct*(1-plotdata_sub$pct))/plotdata_sub$n)
+plotdata_sub$CI <- 1.96 * plotdata_sub$SE
+
+
+
+```
+
+
+
+
+
+
+Get the CI values that will be plotted as error bars: 
+
+see: https://rcompanion.org/handbook/H_02.html
+
+
+
+
+```{r}
+# create a summary dataset that also contains the percentages
+plotdata_between <- tdata %>%
+  group_by(Transformation, selection_rec) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+
+
+library(PropCIs)
+library(DescTools)
+library(purrr)
+
+plotdata_between %>% 
+  filter(Transformation == "Size") -> transf
+  
+(MultinomCI(transf$n,
+           conf.level=0.95,
+           method="sisonglaz") -> size_ci)
+  
+
+plotdata_between %>% 
+  filter(Transformation == "Shape") -> transf
+  
+(MultinomCI(transf$n,
+           conf.level=0.95,
+           method="sisonglaz") -> shape_ci)
+
+
+plotdata_between %>% 
+  filter(Transformation == "90-Rot.") -> transf
+  
+(MultinomCI(transf$n,
+           conf.level=0.95,
+           method="sisonglaz") -> ninerot_ci)
+
+
+plotdata_between %>% 
+  filter(Transformation == "180-Rot.") -> transf
+  
+(MultinomCI(transf$n,
+           conf.level=0.95,
+           method="sisonglaz") -> huneightyrot_ci)
+
+
+plotdata_between %>% 
+  filter(Transformation == "X-Refl.") -> transf
+  
+(MultinomCI(transf$n,
+           conf.level=0.95,
+           method="sisonglaz") -> xrefl_ci)
+  
+
+plotdata_between %>% 
+  filter(Transformation == "Y-Tran.") -> transf
+  
+(MultinomCI(transf$n,
+           conf.level=0.95,
+           method="sisonglaz") -> ytran_ci)
+
+
+plotdata_between %>% 
+  filter(Transformation == "X-Tran.") -> transf
+  
+(MultinomCI(transf$n,
+           conf.level=0.95,
+           method="sisonglaz") -> xtran_ci)
+  
+
+
+
+ci_low <- c(size_ci[,2], shape_ci[,2], ninerot_ci[,2], huneightyrot_ci[,2], xrefl_ci[,2], ytran_ci[,2], xtran_ci[,2])
+
+ci_up <- c(size_ci[,3], shape_ci[,3], ninerot_ci[,3], huneightyrot_ci[,3], xrefl_ci[,3], ytran_ci[,3], xtran_ci[,3])
+```
+
+
+```{r}
+plotdata$ci_low <- ci_low
+plotdata$ci_up <- ci_up
+```
+
+
+
+
+```{r}
+
+library(scales)
+theme_set(theme_light(base_size = 12, base_family = "Poppins"))
+
+pvalues_x <- c(1:7)
+pvalues <- c(rep("p < .001",6), "p = .057")
+
+g<- ggplot(plotdata, 
+       aes(x = Transformation,
+           y = pct,
+           fill = selection_rec)) +
+  geom_bar(stat = "identity",
+           position = "dodge") +
+  scale_y_continuous(limits = seq(0, 2),
+                     breaks = seq(0, 1, .25),
+                     expand = c(0,0),
+                     label = percent) +
+  coord_cartesian(xlim =c(1, 7), ylim = c(0, 1.1))+
+  #coord_cartesian(clip = "off")+
+  geom_text(aes(label = lbl), 
+            size = 3.5,
+            position = position_dodge(width = 1),
+            vjust = -7) +
+  scale_fill_brewer(palette = "Pastel1") +
+  labs(y = "Percentage", 
+       fill = "Selected Object",
+       x = "Type of Transformation")+
+  geom_pointrange(ymin = ci_low, ymax = ci_up, position = position_dodge(width = 0.89), shape = 22, size = 0.3)+
+  #annotate(geom = "hline",yintercept = 0.5, y = 0.5, color = "black", size = 1, linetype='dotted')+
+  #annotate("pointrange", x = plotdata$Transformation, y = plotdata$pct, 
+   #        ymin = plotdata$ci_low, 
+    #       ymax = plotdata$ci_up, 
+     #      colour = "black", size = 0.8, shape = 22, fill = Transformation, fatten = 1)+
+  #annotate("text", x = pvalues_x, y = Inf, label = pvalues, size = 4, vjust = 1.8)+
+  theme(legend.position = "top", axis.title = element_text(size = 15), axis.text = element_text(size = 13, color = "black"),
+        legend.text = element_text(size = 13),legend.title = element_text(size = 13))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+g
+
+#ggsave("selections_between.pdf",width=6,height=5)
+ggsave("selections_dodged.svg",width=12,height=5)
+ggsave("selections_dodged.pdf",width=12,height=5)
+```
+
+The method "sisongalz" is the default method. It is also the most recently developed method, and we'll go with it. We nonetheless may want to check whether other methods lead immensely different results. 
+
+
+# Data from pilot study
+
+The pilot study was mostly identical with the main study but tested fewer subjects. One difference from the main study was that the pilot study contained an additional "explanation" screen where subjects were asked to write short explanations of their choice. 
+
+```{r}
+tdata_p <- read_csv("tdata_pilot.csv")
+```
+
+
+```{r}
+table(tdata_p$gender) #%>% sum()
+
+#tdata_p$age <- as.numeric(tdata_p$age)
+
+mean(tdata_p$age)
+sd(tdata_p$age)
+min(tdata_p$age)
+max(tdata_p$age)
+```
+
+
+```{r}
+
+# add a column that represents the transformations as a factor
+tdata_p$Transformation <- factor(tdata_p$test_stimulus, 
+                               levels = c("img/Left_Y_Symmetry_Big.svg",
+                                          "img/Left_Y_Symmetry_Angle.svg",
+                                          "img/Left_Y_Symmetry_X_Rotation.svg",
+                                          "img/Left_Y_Symmetry_X_Rotation_180.svg",
+                                          "img/Left_Y_Symmetry_X_Symmetry.svg",
+                                          "img/Left_Y_Symmetry_Y_Translation.svg",
+                                          "img/Left_Y_Symmetry_X_Translation.svg",
+                                          "img/Right_Y_Symmetry_Big.svg",
+                                          "img/Right_Y_Symmetry_Angle.svg",
+                                          "img/Right_Y_Symmetry_X_Rotation.svg",
+                                          "img/Right_Y_Symmetry_X_Rotation_180.svg",
+                                          "img/Right_Y_Symmetry_X_Symmetry.svg",
+                                          "img/Right_Y_Symmetry_Y_Translation.svg",
+                                          "img/Right_Y_Symmetry_X_Translation.svg"), 
+                               labels = c("Size", 
+                                          "Shape", 
+                                          "90-Rot.", 
+                                          "180-Rot.", 
+                                          "X-Refl.", 
+                                          "Y-Tran.",
+                                          "X-Tran.",
+                                          "Size", 
+                                          "Shape", 
+                                          "90-Rot.", 
+                                          "180-Rot.", 
+                                          "X-Refl.", 
+                                          "Y-Tran.",
+                                          "X-Tran."))
+
+
+# add another column that codes the side of the y-symm transformation as a factor
+tdata_p$Side <- factor(tdata_p$Ysym_side, levels = c("left", "right"), labels = c("left", "right"))
+
+
+
+tdata_p$selection_rec <- factor(tdata_p$dv_selection_rec, levels = c("Ysym", "None", "not-Ysym"), labels = c("Y-Refl.", "None", "Not-Y-Refl."))
+```
+
+```{r}
+table(tdata_p$condition)
+table(tdata_p$Transformation)
+```
+
+
+
+```{r}
+# create a summary dataset that also contains the percentages
+
+plotdata_between <- tdata_p %>%
+  group_by(Transformation, selection_rec) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+
+
+
+plotdata_sub <- subset(plotdata_between, selection_rec == "Y-Refl.")
+
+
+```
+
+
+```{r, echo = FALSE}
+
+plotdata <- plotdata_between
+
+# create a theme to handle the design 
+myTheme <- theme(plot.title = element_text(face="bold", size = 16),
+        axis.title.x = element_text(face = "bold", size = 20),
+        axis.title.y = element_text(face = "bold", size = 20),
+        axis.text.x = element_text(size = 20, angle = 45, hjust = 1), 
+        axis.text.y = element_text(size = 18, angle = 0),
+        legend.text = element_text(size = 18),
+        legend.title = element_text(face = "bold", size = 18),
+        strip.text.x = element_text(size = 18),
+        #panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.background = element_blank(), 
+        axis.line.x = element_line(colour = "black"), 
+        axis.line.y = element_line(colour = "black"),
+        axis.text = element_text(colour ="black"), 
+        axis.ticks = element_line(colour ="black"))
+
+
+theme_set(theme_light(base_size = 20, base_family = "Poppins"))
+
+
+# append CI of the proportions 
+
+plotdata_sub$n <- 30
+
+plotdata_sub$SE <- sqrt((plotdata_sub$pct*(1-plotdata_sub$pct))/plotdata_sub$n)
+plotdata_sub$CI <- 1.96 * plotdata_sub$SE
+
+
+
+```
+
+
+
+
+
+
+Get the CI values that will be plotted as error bars: 
+
+see: https://rcompanion.org/handbook/H_02.html
+
+
+
+
+```{r}
+# create a summary dataset that also contains the percentages
+plotdata_between <- tdata_p %>%
+  group_by(Transformation, selection_rec) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+
+
+library(PropCIs)
+library(DescTools)
+library(purrr)
+
+plotdata_between %>% 
+  filter(Transformation == "Size") -> transf
+  
+(MultinomCI(transf$n,
+           conf.level=0.95,
+           method="sisonglaz") -> size_ci)
+  
+
+plotdata_between %>% 
+  filter(Transformation == "Shape") -> transf
+  
+(MultinomCI(transf$n,
+           conf.level=0.95,
+           method="sisonglaz") -> shape_ci)
+
+
+plotdata_between %>% 
+  filter(Transformation == "90-Rot.") -> transf
+  
+(MultinomCI(transf$n,
+           conf.level=0.95,
+           method="sisonglaz") -> ninerot_ci)
+
+
+plotdata_between %>% 
+  filter(Transformation == "180-Rot.") -> transf
+  
+(MultinomCI(transf$n,
+           conf.level=0.95,
+           method="sisonglaz") -> huneightyrot_ci)
+
+
+plotdata_between %>% 
+  filter(Transformation == "X-Refl.") -> transf
+  
+(MultinomCI(transf$n,
+           conf.level=0.95,
+           method="sisonglaz") -> xrefl_ci)
+  
+
+plotdata_between %>% 
+  filter(Transformation == "Y-Tran.") -> transf
+  
+(MultinomCI(transf$n,
+           conf.level=0.95,
+           method="sisonglaz") -> ytran_ci)
+
+
+plotdata_between %>% 
+  filter(Transformation == "X-Tran.") -> transf
+  
+(MultinomCI(transf$n,
+           conf.level=0.95,
+           method="sisonglaz") -> xtran_ci)
+  
+
+
+
+ci_low <- c(size_ci[,2], shape_ci[,2], ninerot_ci[,2], huneightyrot_ci[,2], xrefl_ci[,2], ytran_ci[,2], xtran_ci[,2])
+
+ci_up <- c(size_ci[,3], shape_ci[,3], ninerot_ci[,3], huneightyrot_ci[,3], xrefl_ci[,3], ytran_ci[,3], xtran_ci[,3])
+```
+
+
+```{r}
+plotdata$ci_low <- ci_low
+plotdata$ci_up <- ci_up
+```
+
+
+
+
+```{r}
+
+library(scales)
+theme_set(theme_light(base_size = 12, base_family = "Poppins"))
+
+pvalues_x <- c(1:7)
+pvalues <- c(rep("p < .001",6), "p = .057")
+
+g<- ggplot(plotdata, 
+       aes(x = Transformation,
+           y = pct,
+           fill = selection_rec)) +
+  geom_bar(stat = "identity",
+           position = "dodge") +
+  scale_y_continuous(limits = seq(0, 2),
+                     breaks = seq(0, 1, .25),
+                     expand = c(0,0),
+                     label = percent) +
+  coord_cartesian(xlim =c(1, 7), ylim = c(0, 1.1))+
+  #coord_cartesian(clip = "off")+
+  geom_text(aes(label = lbl), 
+            size = 3.5,
+            position = position_dodge(width = 1),
+            vjust = -7) +
+  scale_fill_brewer(palette = "Pastel1") +
+  labs(y = "Percentage", 
+       fill = "Selected Object",
+       x = "Type of Transformation")+
+  geom_pointrange(ymin = ci_low, ymax = ci_up, position = position_dodge(width = 0.89), shape = 22, size = 0.3)+
+  #annotate(geom = "hline",yintercept = 0.5, y = 0.5, color = "black", size = 1, linetype='dotted')+
+  #annotate("pointrange", x = plotdata$Transformation, y = plotdata$pct, 
+   #        ymin = plotdata$ci_low, 
+    #       ymax = plotdata$ci_up, 
+     #      colour = "black", size = 0.8, shape = 22, fill = Transformation, fatten = 1)+
+  #annotate("text", x = pvalues_x, y = Inf, label = pvalues, size = 4, vjust = 1.8)+
+  theme(legend.position = "top", axis.title = element_text(size = 15), axis.text = element_text(size = 13, color = "black"),
+        legend.text = element_text(size = 13),legend.title = element_text(size = 13))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+g
+
+#ggsave("selections_between.pdf",width=6,height=5)
+ggsave("pilot_selections_dodged.svg",width=12,height=5)
+ggsave("pilot_selections_dodged.pdf",width=12,height=5)
+```
+
+
+# Aggregate Pilot and Main 
+
+```{r}
+tdata_p <- subset(tdata_p, select = -c(explanation) )
+tdata_t <- rbind(tdata, tdata_p)
+
+
+table(tdata_t$condition)
+table(tdata_t$Transformation)
+
+```
+
+
+
+```{r}
+# create a summary dataset that also contains the percentages
+
+plotdata_between <- tdata_t %>%
+  group_by(Transformation, selection_rec) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+
+
+
+plotdata_sub <- subset(plotdata_between, selection_rec == "Y-Refl.")
+
+
+```
+
+
+```{r, echo = FALSE}
+
+plotdata <- plotdata_between
+
+# create a theme to handle the design 
+myTheme <- theme(plot.title = element_text(face="bold", size = 16),
+        axis.title.x = element_text(face = "bold", size = 20),
+        axis.title.y = element_text(face = "bold", size = 20),
+        axis.text.x = element_text(size = 20, angle = 45, hjust = 1), 
+        axis.text.y = element_text(size = 18, angle = 0),
+        legend.text = element_text(size = 18),
+        legend.title = element_text(face = "bold", size = 18),
+        strip.text.x = element_text(size = 18),
+        #panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.background = element_blank(), 
+        axis.line.x = element_line(colour = "black"), 
+        axis.line.y = element_line(colour = "black"),
+        axis.text = element_text(colour ="black"), 
+        axis.ticks = element_line(colour ="black"))
+
+
+theme_set(theme_light(base_size = 20, base_family = "Poppins"))
+
+
+# append CI of the proportions 
+
+plotdata_sub$n <- 30
+
+plotdata_sub$SE <- sqrt((plotdata_sub$pct*(1-plotdata_sub$pct))/plotdata_sub$n)
+plotdata_sub$CI <- 1.96 * plotdata_sub$SE
+
+
+
+```
+
+
+
+
+
+
+Get the CI values that will be plotted as error bars
+
+see: https://rcompanion.org/handbook/H_02.html
+
+
+
+
+```{r}
+# create a summary dataset that also contains the percentages
+plotdata_between <- tdata_t %>%
+  group_by(Transformation, selection_rec) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+
+
+library(PropCIs)
+library(DescTools)
+library(purrr)
+
+plotdata_between %>% 
+  filter(Transformation == "Size") -> transf
+  
+(MultinomCI(transf$n,
+           conf.level=0.95,
+           method="sisonglaz") -> size_ci)
+  
+
+plotdata_between %>% 
+  filter(Transformation == "Shape") -> transf
+  
+(MultinomCI(transf$n,
+           conf.level=0.95,
+           method="sisonglaz") -> shape_ci)
+
+
+plotdata_between %>% 
+  filter(Transformation == "90-Rot.") -> transf
+  
+(MultinomCI(transf$n,
+           conf.level=0.95,
+           method="sisonglaz") -> ninerot_ci)
+
+
+plotdata_between %>% 
+  filter(Transformation == "180-Rot.") -> transf
+  
+(MultinomCI(transf$n,
+           conf.level=0.95,
+           method="sisonglaz") -> huneightyrot_ci)
+
+
+plotdata_between %>% 
+  filter(Transformation == "X-Refl.") -> transf
+  
+(MultinomCI(transf$n,
+           conf.level=0.95,
+           method="sisonglaz") -> xrefl_ci)
+  
+
+plotdata_between %>% 
+  filter(Transformation == "Y-Tran.") -> transf
+  
+(MultinomCI(transf$n,
+           conf.level=0.95,
+           method="sisonglaz") -> ytran_ci)
+
+
+plotdata_between %>% 
+  filter(Transformation == "X-Tran.") -> transf
+  
+(MultinomCI(transf$n,
+           conf.level=0.95,
+           method="sisonglaz") -> xtran_ci)
+  
+
+
+
+ci_low <- c(size_ci[,2], shape_ci[,2], ninerot_ci[,2], huneightyrot_ci[,2], xrefl_ci[,2], ytran_ci[,2], xtran_ci[,2])
+
+ci_up <- c(size_ci[,3], shape_ci[,3], ninerot_ci[,3], huneightyrot_ci[,3], xrefl_ci[,3], ytran_ci[,3], xtran_ci[,3])
+```
+
+
+```{r}
+plotdata$ci_low <- ci_low
+plotdata$ci_up <- ci_up
+```
+
+
+
+
+```{r}
+
+library(scales)
+theme_set(theme_light(base_size = 12, base_family = "Poppins"))
+
+pvalues_x <- c(1:7)
+pvalues <- c(rep("p < .001",6), "p = .057")
+
+g<- ggplot(plotdata, 
+       aes(x = Transformation,
+           y = pct,
+           fill = selection_rec)) +
+  geom_bar(stat = "identity",
+           position = "dodge") +
+  scale_y_continuous(limits = seq(0, 2),
+                     breaks = seq(0, 1, .25),
+                     expand = c(0,0),
+                     label = percent) +
+  coord_cartesian(xlim =c(1, 7), ylim = c(0, 1.1))+
+  #coord_cartesian(clip = "off")+
+  geom_text(aes(label = lbl), 
+            size = 3.5,
+            position = position_dodge(width = 1),
+            vjust = -7) +
+  scale_fill_brewer(palette = "Pastel1") +
+  labs(y = "Percentage", 
+       fill = "Selected Object",
+       x = "Type of Transformation")+
+  geom_pointrange(ymin = ci_low, ymax = ci_up, position = position_dodge(width = 0.89), shape = 22, size = 0.3)+
+  #annotate(geom = "hline",yintercept = 0.5, y = 0.5, color = "black", size = 1, linetype='dotted')+
+  #annotate("pointrange", x = plotdata$Transformation, y = plotdata$pct, 
+   #        ymin = plotdata$ci_low, 
+    #       ymax = plotdata$ci_up, 
+     #      colour = "black", size = 0.8, shape = 22, fill = Transformation, fatten = 1)+
+  #annotate("text", x = pvalues_x, y = Inf, label = pvalues, size = 4, vjust = 1.8)+
+  theme(legend.position = "top", axis.title = element_text(size = 15), axis.text = element_text(size = 13, color = "black"),
+        legend.text = element_text(size = 13),legend.title = element_text(size = 13))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+g
+
+#ggsave("selections_between.pdf",width=6,height=5)
+ggsave("pilot_and_main_selections_dodged.svg",width=12,height=5)
+ggsave("pilot_and_main_selections_dodged.pdf",width=12,height=5)
+```
+
+# Graph averaging over transformations 
+
+## Main study 
+
+```{r}
+# create a summary dataset that also contains the percentages
+
+plotdata_between <- tdata %>%
+  group_by(selection_rec) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+
+```
+
+
+```{r}
+
+library(PropCIs)
+library(DescTools)
+library(purrr)
+
+plotdata_between -> transf
+  
+(MultinomCI(transf$n,
+           conf.level=0.95,
+           method="sisonglaz") -> selection_ci)
+  
+
+ci_low <- c(selection_ci[,2])
+
+ci_up <- c(selection_ci[,3])
+```
+
+
+```{r}
+plotdata <- plotdata_between
+
+plotdata$ci_low <- ci_low
+plotdata$ci_up <- ci_up
+```
+
+
+
+```{r}
+
+library(scales)
+theme_set(theme_light(base_size = 12, base_family = "Poppins"))
+
+pvalues_x <- c(1:7)
+pvalues <- c(rep("p < .001",6), "p = .057")
+
+g<- ggplot(plotdata, 
+       aes(x = selection_rec,
+           y = pct,
+           fill = selection_rec)) +
+  geom_bar(stat = "identity",
+           position = "dodge") +
+  scale_y_continuous(limits = seq(0, 2),
+                     breaks = seq(0, 1, .25),
+                     expand = c(0,0),
+                     label = percent) +
+  #coord_cartesian(xlim =c(1, 7), ylim = c(0, 1.1))+
+  #coord_cartesian(clip = "off")+
+  geom_text(aes(label = lbl), 
+            size = 3.5,
+            position = position_dodge(width = 1),
+            vjust = -7) +
+  scale_fill_brewer(palette = "Pastel1") +
+  labs(y = "Percentage", 
+       fill = "Selected Object",
+       x = "Selected Object ")+
+  geom_pointrange(ymin = ci_low, ymax = ci_up, position = position_dodge(width = 0.89), shape = 22, size = 0.3)+
+  #annotate(geom = "hline",yintercept = 0.5, y = 0.5, color = "black", size = 1, linetype='dotted')+
+  #annotate("pointrange", x = plotdata$Transformation, y = plotdata$pct, 
+   #        ymin = plotdata$ci_low, 
+    #       ymax = plotdata$ci_up, 
+     #      colour = "black", size = 0.8, shape = 22, fill = Transformation, fatten = 1)+
+  #annotate("text", x = pvalues_x, y = Inf, label = pvalues, size = 4, vjust = 1.8)+
+  theme(legend.position = "none", axis.title = element_text(size = 15), axis.text = element_text(size = 13, color = "black"),
+        legend.text = element_text(size = 13),legend.title = element_text(size = 13))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  ggtitle("Main Study (N = 420)")
+
+g
+
+#ggsave("selections_between.pdf",width=6,height=5)
+ggsave("main_averaged_over_transformations.svg",width=5,height=5)
+ggsave("main_averaged_over_transformations.pdf",width=5,height=5)
+```
+
+## Pilot study 
+
+```{r}
+# create a summary dataset that also contains the percentages
+
+plotdata_between <- tdata_p %>%
+  group_by(selection_rec) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+
+```
+
+
+```{r}
+
+library(PropCIs)
+library(DescTools)
+library(purrr)
+
+plotdata_between -> transf
+  
+(MultinomCI(transf$n,
+           conf.level=0.95,
+           method="sisonglaz") -> selection_ci)
+  
+
+ci_low <- c(selection_ci[,2])
+
+ci_up <- c(selection_ci[,3])
+```
+
+
+```{r}
+plotdata <- plotdata_between
+
+plotdata$ci_low <- ci_low
+plotdata$ci_up <- ci_up
+```
+
+
+
+```{r}
+
+library(scales)
+theme_set(theme_light(base_size = 12, base_family = "Poppins"))
+
+pvalues_x <- c(1:7)
+pvalues <- c(rep("p < .001",6), "p = .057")
+
+g<- ggplot(plotdata, 
+       aes(x = selection_rec,
+           y = pct,
+           fill = selection_rec)) +
+  geom_bar(stat = "identity",
+           position = "dodge") +
+  scale_y_continuous(limits = seq(0, 2),
+                     breaks = seq(0, 1, .25),
+                     expand = c(0,0),
+                     label = percent) +
+  #coord_cartesian(xlim =c(1, 7), ylim = c(0, 1.1))+
+  #coord_cartesian(clip = "off")+
+  geom_text(aes(label = lbl), 
+            size = 3.5,
+            position = position_dodge(width = 1),
+            vjust = -7) +
+  scale_fill_brewer(palette = "Pastel1") +
+  labs(y = "Percentage", 
+       fill = "Selected Object",
+       x = "Selected Object ")+
+  geom_pointrange(ymin = ci_low, ymax = ci_up, position = position_dodge(width = 0.89), shape = 22, size = 0.3)+
+  #annotate(geom = "hline",yintercept = 0.5, y = 0.5, color = "black", size = 1, linetype='dotted')+
+  #annotate("pointrange", x = plotdata$Transformation, y = plotdata$pct, 
+   #        ymin = plotdata$ci_low, 
+    #       ymax = plotdata$ci_up, 
+     #      colour = "black", size = 0.8, shape = 22, fill = Transformation, fatten = 1)+
+  #annotate("text", x = pvalues_x, y = Inf, label = pvalues, size = 4, vjust = 1.8)+
+  theme(legend.position = "none", axis.title = element_text(size = 15), axis.text = element_text(size = 13, color = "black"),
+        legend.text = element_text(size = 13),legend.title = element_text(size = 13))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  ggtitle("Pilot Study (N = 215)")
+
+g
+
+#ggsave("selections_between.pdf",width=6,height=5)
+ggsave("pilot_averaged_over_transformations.svg",width=5,height=5)
+ggsave("pilot_averaged_over_transformations.pdf",width=5,height=5)
+```
+
+
+
+
+## Pilot and Main together
+
+```{r}
+# create a summary dataset that also contains the percentages
+
+plotdata_between <- tdata_t %>%
+  group_by(selection_rec) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+
+```
+
+
+```{r}
+
+library(PropCIs)
+library(DescTools)
+library(purrr)
+
+plotdata_between -> transf
+  
+(MultinomCI(transf$n,
+           conf.level=0.95,
+           method="sisonglaz") -> selection_ci)
+  
+
+ci_low <- c(selection_ci[,2])
+
+ci_up <- c(selection_ci[,3])
+```
+
+
+```{r}
+plotdata <- plotdata_between
+
+plotdata$ci_low <- ci_low
+plotdata$ci_up <- ci_up
+```
+
+
+
+```{r}
+
+library(scales)
+theme_set(theme_light(base_size = 12, base_family = "Poppins"))
+
+pvalues_x <- c(1:7)
+pvalues <- c(rep("p < .001",6), "p = .057")
+
+g<- ggplot(plotdata, 
+       aes(x = selection_rec,
+           y = pct,
+           fill = selection_rec)) +
+  geom_bar(stat = "identity",
+           position = "dodge") +
+  scale_y_continuous(limits = seq(0, 2),
+                     breaks = seq(0, 1, .25),
+                     expand = c(0,0),
+                     label = percent) +
+  #coord_cartesian(xlim =c(1, 7), ylim = c(0, 1.1))+
+  #coord_cartesian(clip = "off")+
+  geom_text(aes(label = lbl), 
+            size = 3.5,
+            position = position_dodge(width = 1),
+            vjust = -7) +
+  scale_fill_brewer(palette = "Pastel1") +
+  labs(y = "Percentage", 
+       fill = "Selected Object",
+       x = "Selected Object ")+
+  geom_pointrange(ymin = ci_low, ymax = ci_up, position = position_dodge(width = 0.89), shape = 22, size = 0.3)+
+  #annotate(geom = "hline",yintercept = 0.5, y = 0.5, color = "black", size = 1, linetype='dotted')+
+  #annotate("pointrange", x = plotdata$Transformation, y = plotdata$pct, 
+   #        ymin = plotdata$ci_low, 
+    #       ymax = plotdata$ci_up, 
+     #      colour = "black", size = 0.8, shape = 22, fill = Transformation, fatten = 1)+
+  #annotate("text", x = pvalues_x, y = Inf, label = pvalues, size = 4, vjust = 1.8)+
+  theme(legend.position = "none", axis.title = element_text(size = 15), axis.text = element_text(size = 13, color = "black"),
+        legend.text = element_text(size = 13),legend.title = element_text(size = 13))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  ggtitle("Pilot and Main Study together (N = 635)")
+
+g
+
+#ggsave("selections_between.pdf",width=6,height=5)
+ggsave("pilot_and_main_averaged_over_transformations.svg",width=5,height=5)
+ggsave("pilot_and_main_averaged_over_transformations.pdf",width=5,height=5)
+```

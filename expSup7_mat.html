@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+
+
+<title>Supplementary Experiment 7</title>
+
+<script src="site_libs/header-attrs-2.18/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/readable.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+<link rel="icon" type="image/png" href="favicon.ico"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/iframe-resizer/3.5.16/iframeResizer.min.js" type="text/javascript"></script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+<link rel="stylesheet" href="styles.css" type="text/css" />
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "\e258";
+  font-family: 'Glyphicons Halflings';
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+
+
+<div class="navbar navbar-inverse  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html"></a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">
+    <span class="fa fa-home"></span>
+     
+    Home
+  </a>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    <span class="glyphicon glyphicon-picture"></span>
+     
+    Main Experiments
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li class="dropdown-header">Stimuli, print versions, and demos</li>
+    <li>
+      <a href="exp1a_mat.html">Experiment 1a</a>
+    </li>
+    <li>
+      <a href="exp1b_mat.html">Experiment 1b</a>
+    </li>
+    <li>
+      <a href="exp2_mat.html">Experiment 2</a>
+    </li>
+    <li>
+      <a href="exp3_mat.html">Experiment 3</a>
+    </li>
+  </ul>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    <span class="glyphicon glyphicon-stats"></span>
+     
+    Analyses (Main Experiments)
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="analyses/Analysis_Exp1a_Exp1b_Exp2_Exp3.html">Markdown HTML of Analyses for Exp. 1a, 1b, 2, and 3</a>
+    </li>
+    <li>
+      <a href="analyses/exp_analysis_Exp1_2_3.zip">Download R-Markdown Script (with data) for Exp. 1a, 1b, 2, and 3</a>
+    </li>
+    <li>
+      <a href="analyses/Analysis_Exp4.html">Markdown HTML of Analyses for the Deviant Detection Experiment</a>
+    </li>
+    <li>
+      <a href="analyses/exp_analysis_Exp4.zip">Download R-Markdown Script (with data) the Deviant Detection Experiment</a>
+    </li>
+  </ul>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    <span class="glyphicon glyphicon-inbox"></span>
+     
+    Supplementary Studies
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li class="dropdown-header">Summary of Supplementary Studies</li>
+    <li>
+      <a href="expSup4_mat.html">Supplementary Study 4</a>
+    </li>
+    <li>
+      <a href="expSup5_mat.html">Supplementary Study 5</a>
+    </li>
+    <li>
+      <a href="expSup6_mat.html">Supplementary Study 6</a>
+    </li>
+    <li>
+      <a href="expSup7_mat.html">Supplementary Study 7</a>
+    </li>
+  </ul>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    <span class="glyphicon glyphicon-inbox"></span>
+     
+    Supplementary Materials
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="supplementary/Supplementary_Materials_Placi_et_al.pdf">Supplementary File (PDF)</a>
+    </li>
+  </ul>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">Supplementary Experiment 7</h1>
+
+</div>
+
+
+<style>
+body {
+    font-family: 'Muli';
+    font-size: 14px;
+}
+</style>
+<!--
+<h2><font style="color:lightgrey;"> Stimuli </font></h1>
+-->
+<p><br></p>
+<p><img
+src="supplementary_studies/expSupp7/experiment_files/task_local_demo/img/3D_Identity.svg" /></p>
+<p><br></p>
+<hr />
+<div id="demo-version-of-experiment" class="section level1">
+<h1>Demo Version of Experiment</h1>
+<p>To start a demo version of the experiment, click <a
+href="supplementary_studies/expSupp7/experiment_files/task_local_demo/Exp_demo.html">here</a>.</p>
+<hr />
+</div>
+<div id="data" class="section level1">
+<h1>Data</h1>
+<ul>
+<li><a
+href="supplementary_studies/expSupp7/data_and_analyses/tdata_final.zip">Download
+Experimental data</a> [folder containing data sets for main and pilot
+study]</li>
+</ul>
+<div id="data-set-information" class="section level2">
+<h2>Data set information</h2>
+<p>The data set contains the following columns:</p>
+<ul>
+<li><strong>subj_code</strong>: a subject code</li>
+<li><strong>condition</strong>: condition variable counting the
+different conditions (1 to 8)</li>
+<li><strong>desktop_conf</strong>: confirmation that desktop PC was
+used</li>
+<li><strong>attent_conf</strong>: confirmation that subj. is willing to
+pay attention</li>
+<li><strong>Ysim_side</strong>: counterbalancing factor coding on which
+side of the screen the Y-sym. object was shown</li>
+<li><strong>test_stimulus</strong>: the test pic subjects saw</li>
+<li><strong>dv_selection</strong>: the choice subjects made (see
+dv_selection_rec to see what the numbers mean)</li>
+<li><strong>age</strong>: subjects’ age</li>
+<li><strong>gender</strong>: subjects’ gender</li>
+<li><strong>tech_issues</strong>: subjects report of technical
+issues</li>
+<li><strong>dv_selection_rec</strong>: recoded choices that subjects
+made</li>
+<li><strong>Transformation</strong>: condition variable coding the kind
+of transformation shown in the test phase</li>
+<li><strong>Side</strong>: same variable as “Ysim_side”</li>
+<li><strong>selection_rec</strong>: same as “dv_selection_rec”</li>
+</ul>
+<hr />
+</div>
+</div>
+<div id="analysis-script" class="section level1">
+<h1>Analysis Script</h1>
+<ul>
+<li><a
+href="supplementary_studies/expSupp7/data_and_analyses/Analysis.Rmd">View
+R-Markdown code</a></li>
+<li><a
+href="supplementary_studies/expSupp7/data_and_analyses/Analysis.zip">Download
+R-Markdown code</a></li>
+<li><a
+href="supplementary_studies/expSupp7/data_and_analyses/Analysis.html">View
+knitted/ compiled R-Markdown</a> (web view of analysis)</li>
+</ul>
+<hr />
+</div>
+<div id="description-of-the-study" class="section level1">
+<h1>Description of the study</h1>
+<p>A potential concern about our main studies might be that we asked
+subjects to select the object emitting a “different intensity of alpha
+rays”. Although systematic differences in subjects’ preferences must be
+due to the geometrical transformations we manipulated, a more direct
+question would be to ask subjects to say which object is “different from
+the first one”. This was what we did in Supplementary Experiment 7,
+which is otherwise identical to our Main Experiment 1a.</p>
+<div id="method" class="section level2">
+<h2>Method</h2>
+<div id="participants" class="section level3">
+<h3>Participants</h3>
+<p>Four hundred and thirty-four participants (<span
+class="math inline">\(n~62\)</span> per theoretically relevant
+condition, <span class="math inline">\(M_{age}~= 37.48\)</span>, <span
+class="math inline">\(SD_{age}~= 11.69\)</span>, age range <span
+class="math inline">\(18-75\)</span>) were recruited via the online
+platform Prolific (). Inclusion criteria were: age range between 18 and
+99 years old, a subject’s approval rate concerning participation in
+previous studies of at least 90%. To ensure that subjects could read and
+understand the materials, we excluded subjects who received no formal
+education. Participants received a link that led them directly to the
+online experiment, which was created with the JSPsych framework (<a
+href="https://www.jspsych.org/7.3/">https://www.jspsych.org/7.3/</a>).
+Subjects received a monetary reward for their participation. Subjects
+were not informed about the hypotheses that we tested. We decided to
+test about half as many subjects than in our main experiments and
+stopped data collection after <span class="math inline">\(n~=62\)</span>
+subjects per (transformation) condition.</p>
+</div>
+<div id="design-materials-and-procedure" class="section level3">
+<h3>Design, materials, and procedure</h3>
+<p>The experiment had the same seven between-subjects conditions as our
+other studies. Conditions differed with respect to the target
+geometrical transformation. A demo of the experiment can be run <a
+href="supplementary_studies/expSupp7/experiment_files/task_local_demo/Exp_demo.html">here</a>.</p>
+<p>After some general information and confirmation questions, subjects
+read the following scenario description:</p>
+<blockquote>
+<p>Scientists on an extraterrestrial mission have landed on a foreign
+planet not so different from planet Earth. They start exploring their
+surroundings and walk through a desert. They soon notice an unfamiliar
+black object. Below you can see the photograph they took.</p>
+<p><img
+src="supplementary_studies/expSupp7/experiment_files/task_local_demo/img/3D_Identity.svg" />
+<br> <br></p>
+If you have studied the information thoroughly, please click “Continue”
+to proceed.
+</blockquote>
+<p>Subjects then proceeded to the test screen, where two objects were
+shown (the example below comes from the “size” condition):</p>
+<blockquote>
+<p>Later on, the scientists arrive in front of two new objects. Below
+you can see the photograph they took.</p>
+<p><img
+src="supplementary_studies/expSupp7/experiment_files/task_local_demo/img/Left_Y_Symmetry_Big.svg" /></p>
+</blockquote>
+<p>Whether the Y-Reflection object was displayed on the right or the
+left was counterbalanced between subjects. On the same screen below the
+picture, subjects were asked the following test question:</p>
+<blockquote>
+<p>According to your intuition, which of these two novel objects belongs
+to a different kind of objects than the first object the scientists
+saw?</p>
+</blockquote>
+<p>They could select between two options in this study: “The left
+object” vs. “The right object”.</p>
+<p>Subjects then provided demographic data, had the chance to report any
+technical issues they might have experienced, and then finished the
+experiment on a short debriefing screen.</p>
+<p>We had also conducted a pilot study with half as many subjects. The
+pilot study was identical until after the main test question. Unlike
+subjects in the main study, subjects of the pilot study were asked to
+write a short explanation of their choice.</p>
+</div>
+</div>
+<div id="results-and-discussion" class="section level2">
+<h2>Results and discussion</h2>
+<p>The knitted analysis file can be accessed <a
+href="supplementary_studies/expSupp7/data_and_analyses/Analysis.html">here</a>.
+Subjects’ selections in the different transformation conditions are
+shown in the following graph:</p>
+<p><img
+src="supplementary_studies/expSupp7/data_and_analyses/selections_between.svg" /></p>
+<p><br></p>
+<p>This graph shows that the selection behavior was almost identical to
+the one we observed in Experiment 1a. We thus find the same pattern of
+results even if we don’t ask for differences in a certain physical
+parameter (e.g., “intensity of alpha rays”) rather than the “difference
+between objects”.</p>
+</div>
+</div>
+
+<p><font size="-1.5">Copyright &copy; 2023 ANONYMIZED AUTHORS.</font></p>
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

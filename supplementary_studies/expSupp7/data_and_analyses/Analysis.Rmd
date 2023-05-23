@@ -1,0 +1,338 @@
+---
+title: "Analysis"
+output:  
+  html_document:
+    number_sections: true
+    toc: true  
+    collapsed: false
+    toc_float: true
+    smooth_scroll: false
+    toc_depth: 3
+    self_contained: yes
+---
+
+```{r, message = FALSE, echo = FALSE, warning=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+# packages
+library(ez)
+library(ggplot2)
+library(plyr)
+library(pastecs)
+library(ez)
+library(data.table)
+library(overlapping) # to compute the 
+library(tidyr)
+library(showtext)
+#install.packages("expss")
+library(expss)
+library(dplyr)
+
+font_add_google("Poppins", "Poppins")
+font_add_google("Roboto Mono", "Roboto Mono")
+showtext_auto()
+```
+
+
+
+
+
+```{r}
+# read data 
+library(readr)
+tdata <- read_csv("tdata_final.csv")
+```
+# Demographic information
+
+```{r}
+table(tdata$gender) #%>% sum()
+
+#tdata$age <- as.numeric(tdata$age)
+
+mean(tdata$age)
+sd(tdata$age)
+min(tdata$age)
+max(tdata$age)
+```
+
+
+# Data handling
+
+```{r}
+
+# add a column that represents the transformations as a factor
+tdata$Transformation <- factor(tdata$test_stimulus, 
+                               levels = c("img/Left_Y_Symmetry_Big.svg",
+                                          "img/Left_Y_Symmetry_Angle.svg",
+                                          "img/Left_Y_Symmetry_X_Rotation.svg",
+                                          "img/Left_Y_Symmetry_X_Rotation_180.svg",
+                                          "img/Left_Y_Symmetry_X_Symmetry.svg",
+                                          "img/Left_Y_Symmetry_Y_Translation.svg",
+                                          "img/Left_Y_Symmetry_X_Translation.svg",
+                                          "img/Right_Y_Symmetry_Big.svg",
+                                          "img/Right_Y_Symmetry_Angle.svg",
+                                          "img/Right_Y_Symmetry_X_Rotation.svg",
+                                          "img/Right_Y_Symmetry_X_Rotation_180.svg",
+                                          "img/Right_Y_Symmetry_X_Symmetry.svg",
+                                          "img/Right_Y_Symmetry_Y_Translation.svg",
+                                          "img/Right_Y_Symmetry_X_Translation.svg"), 
+                               labels = c("Size", 
+                                          "Shape", 
+                                          "90-Rot.", 
+                                          "180-Rot.", 
+                                          "X-Refl.", 
+                                          "Y-Tran.",
+                                          "X-Tran.",
+                                          "Size", 
+                                          "Shape", 
+                                          "90-Rot.", 
+                                          "180-Rot.", 
+                                          "X-Refl.", 
+                                          "Y-Tran.",
+                                          "X-Tran."))
+
+
+# add another column that codes the side of the y-symm transformation as a factor
+tdata$Side <- factor(tdata$Ysym_side, levels = c("left", "right"), labels = c("left", "right"))
+
+
+
+tdata$selection_rec <- factor(tdata$dv_selection_rec, levels = c("Ysym", "not_Ysym"), labels = c("Y-Refl.", "Not-Y-Refl."))
+```
+
+```{r}
+table(tdata$condition)
+table(tdata$Transformation)
+```
+
+
+
+```{r}
+# create a summary dataset that also contains the percentages
+
+plotdata_between <- tdata %>%
+  group_by(Transformation, selection_rec) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+
+
+
+plotdata_sub <- subset(plotdata_between, selection_rec == "Y-Refl.")
+
+
+```
+
+
+```{r, echo = FALSE}
+
+plotdata <- plotdata_between
+
+# create a theme to handle the design 
+myTheme <- theme(plot.title = element_text(face="bold", size = 16),
+        axis.title.x = element_text(face = "bold", size = 20),
+        axis.title.y = element_text(face = "bold", size = 20),
+        axis.text.x = element_text(size = 20, angle = 45, hjust = 1), 
+        axis.text.y = element_text(size = 18, angle = 0),
+        legend.text = element_text(size = 18),
+        legend.title = element_text(face = "bold", size = 18),
+        strip.text.x = element_text(size = 18),
+        #panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.background = element_blank(), 
+        axis.line.x = element_line(colour = "black"), 
+        axis.line.y = element_line(colour = "black"),
+        axis.text = element_text(colour ="black"), 
+        axis.ticks = element_line(colour ="black"))
+
+
+theme_set(theme_light(base_size = 20, base_family = "Poppins"))
+
+
+# append CI of the proportions 
+
+plotdata_sub$n <- 62
+
+plotdata_sub$SE <- sqrt((plotdata_sub$pct*(1-plotdata_sub$pct))/plotdata_sub$n)
+plotdata_sub$CI <- 1.96 * plotdata_sub$SE
+
+
+
+```
+
+
+
+```{r}
+
+library(scales)
+theme_set(theme_light(base_size = 12, base_family = "Poppins"))
+
+pvalues_x <- c(1:7)
+pvalues <- c(rep("p < .001",6), "p = .057")
+
+g<- ggplot(plotdata, 
+       aes(x = Transformation,
+           y = pct,
+           fill = selection_rec)) +
+  geom_bar(stat = "identity",
+           position = "fill") +
+  scale_y_continuous(limits = seq(0, 2),
+                     breaks = seq(0, 1, .25),
+                     expand = c(0,0),
+                     label = percent) +
+  coord_cartesian(xlim =c(1, 7), ylim = c(0, 1.1))+
+  #coord_cartesian(clip = "off")+
+  geom_text(aes(label = lbl), 
+            size = 4.5,
+            position = position_stack(vjust = 0.5)) +
+  scale_fill_brewer(palette = "Pastel1") +
+  labs(y = "Percentage", 
+       fill = "Selected Object",
+       x = "Type of Transformation",
+       title = "Results Exp. X (N = X): 3D Context")+
+  annotate(geom = "hline",yintercept = 0.5, y = 0.5, color = "black", size = 1, linetype='dotted')+
+  annotate("pointrange", x = plotdata_sub$Transformation, y = 1 - plotdata_sub$pct, 
+           ymin = 1 - plotdata_sub$pct - plotdata_sub$CI, 
+           ymax = 1- plotdata_sub$pct + plotdata_sub$CI, 
+           colour = "black", size = 0.8, shape = 22, fill = "lightblue", fatten = 1)+
+  annotate("text", x = pvalues_x, y = Inf, label = pvalues, size = 4, vjust = 1.8)+
+  theme(legend.position = "top", axis.title = element_text(size = 15), axis.text = element_text(size = 13, color = "black"),
+        legend.text = element_text(size = 13),legend.title = element_text(size = 13))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+g
+
+#ggsave("selections_between.pdf",width=6,height=5)
+#ggsave("selections_between.svg",width=6,height=5)
+```
+
+
+# Testing the proportions against chance
+
+
+
+
+
+```{r}
+# create a summary dataset that also contains the percentages
+plotdata_between <- tdata %>%
+  group_by(Transformation, selection_rec) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+
+
+
+plotdata <- plotdata_between
+ind <- seq(2, nrow(plotdata), by=2)
+
+plotdata_sub <- plotdata[ind, ]
+
+
+```
+
+Binomial-Tests against Chance (50%)
+
+```{r}
+#for (i in plotdata_sub$n){
+#  print(binom.test(i, 62, p = 0.5, alternative = "two.sided"))
+#}
+
+
+t1 <- binom.test(plotdata_sub$n[1], 62)
+t1_ci_low <- t1$conf.int[1]
+t1_ci_up <- t1$conf.int[2]
+t1
+
+t2 <- binom.test(plotdata_sub$n[2], 62)
+t2_ci_low <- t2$conf.int[1]
+t2_ci_up <- t2$conf.int[2]
+t2
+
+t3 <- binom.test(plotdata_sub$n[3], 62)
+t3_ci_low <- t3$conf.int[1]
+t3_ci_up <- t3$conf.int[2]
+t3
+
+t4 <- binom.test(plotdata_sub$n[4], 62)
+t4_ci_low <- t4$conf.int[1]
+t4_ci_up <- t4$conf.int[2]
+t4
+
+t5 <- binom.test(plotdata_sub$n[5], 62)
+t5_ci_low <- t5$conf.int[1]
+t5_ci_up <- t5$conf.int[2]
+t5
+
+t6 <- binom.test(plotdata_sub$n[6], 62)
+t6_ci_low <- t6$conf.int[1]
+t6_ci_up <- t6$conf.int[2]
+t6
+
+t7 <- binom.test(plotdata_sub$n[7], 62)
+t7_ci_low <- t7$conf.int[1]
+t7_ci_up <- t7$conf.int[2]
+t7
+
+ci_up <- c(t1_ci_up, t2_ci_up, t3_ci_up, t4_ci_up, t5_ci_up, t6_ci_up, t7_ci_up)
+ci_low <- c(t1_ci_low, t2_ci_low, t3_ci_low, t4_ci_low, t5_ci_low, t6_ci_low, t7_ci_low)
+
+```
+
+
+
+
+
+
+
+
+```{r}
+
+library(scales)
+theme_set(theme_light(base_size = 12, base_family = "Poppins"))
+
+pvalues_x <- c(1:7)
+pvalues <- c(rep("p < .001",6), "p = .007")
+
+g<- ggplot(plotdata, 
+       aes(x = Transformation,
+           y = pct,
+           fill = selection_rec)) +
+  geom_bar(stat = "identity",
+           position = "fill") +
+  scale_y_continuous(limits = seq(0, 2),
+                     breaks = seq(0, 1, .25),
+                     expand = c(0,0),
+                     label = percent) +
+  coord_cartesian(xlim =c(1, 7), ylim = c(0, 1.1))+
+  #coord_cartesian(clip = "off")+
+  geom_text(aes(label = lbl), 
+            size = 4.5,
+            position = position_stack(vjust = 0.5)) +
+  scale_fill_brewer(palette = "Pastel1") +
+  labs(y = "Percentage", 
+       fill = "Selected Object",
+       x = "Type of Transformation",
+       title = "Results Exp. X (N = 434): 3D Context Triangles")+
+  annotate(geom = "hline",yintercept = 0.5, y = 0.5, color = "black", size = 1, linetype='dotted')+
+  annotate("pointrange", x = plotdata_sub$Transformation, y = plotdata_sub$pct, 
+           ymin = ci_low, 
+           ymax = ci_up, 
+           colour = "black", size = 0.8, shape = 22, fill = "lightblue", fatten = 1)+
+  annotate("text", x = pvalues_x, y = Inf, label = pvalues, size = 4, vjust = 1.8)+
+  theme(legend.position = "top", axis.title = element_text(size = 15), axis.text = element_text(size = 13, color = "black"),
+        legend.text = element_text(size = 13),legend.title = element_text(size = 13))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+g
+
+ggsave("selections_between.pdf",width=6,height=5)
+ggsave("selections_between.svg",width=6,height=5)
+```
+
+
+
+
+
+
+
+

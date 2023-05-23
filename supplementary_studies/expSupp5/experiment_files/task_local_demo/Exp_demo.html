@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Demo Exp</title>
+    <script src="jspsych/jspsych.js"></script>
+    <script src="jspsych/plugin-html-button-response.js"></script>
+    <script src="jspsych/plugin-survey-multi-choice.js"></script>
+    <script src="jspsych/plugin-survey-likert.js"></script>
+    <script src="jspsych/plugin-html-slider-response.js"></script>
+	<script src="jspsych/plugin-image-keyboard-response.js"></script>
+	<script src="jspsych/plugin-html-keyboard-response.js"></script>
+    <script src="jspsych/plugin-preload.js"></script>
+    <script src="jspsych/plugin-survey-text.js"></script>
+    <link href="jspsych/jspsych.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body></body>
+  <script>
+ 
+// run study with ?demo=true at the end of url to have the demo mode
+
+
+var jsPsych = initJsPsych({
+  experiment_width: 1000,
+  on_finish: function(){
+    window.location = "https://app.prolific.co/submissions/complete?cc=C1MV7UKV"
+  }
+});
+
+
+//var condition = CONDITION; 
+var condition;
+
+jsPsych.data.addProperties({condition: +condition});
+
+var subj_code;
+
+function makeid(length) {
+    var result           = '';
+    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    var charactersLength = characters.length;
+    for ( var i = 0; i < length; i++ ) {
+      result += characters.charAt(Math.floor(Math.random() * 
+ charactersLength));
+   }
+   return result;
+}
+
+subj_code = makeid(12);
+
+console.log(subj_code);
+
+jsPsych.data.addProperties({subj_code: subj_code});
+
+
+
+/* create timeline */
+var timeline = [];
+
+
+
+var styles = `
+  p {
+    text-align: justify
+  }
+  
+`
+var styleSheet = document.createElement("style")
+styleSheet.type = "text/css"
+styleSheet.innerText = styles
+document.head.appendChild(styleSheet)
+
+
+
+// global variables 
+
+var robot_test_pic;
+var initial_stim;
+var transformation; 
+var side;
+
+
+//////////////////////// images in the different conditions
+var robot_intro_stim = ["img/robot_intro.svg"]
+var arm_intro_stim = ["img/robot_arm_intro.svg"]
+
+// three different arm test pics of which one gets randomly selected
+var arm_tests = ["img/arm_test_01.svg", "img/arm_test_02.svg", "img/arm_test_03.svg"]
+var arm_test_stim = jsPsych.randomization.sampleWithoutReplacement(arm_tests, 1);
+console.log(arm_test_stim);
+
+// initial object 
+var stim_3d_identiy_left = ["img/3D_Identity_left.svg"];
+var stim_3d_identiy_right = ["img/3D_Identity_right.svg"];
+ 
+
+// test pics: geometric transformations
+var Ysym_Left = ["img/Left_Y_Symmetry_Big.svg",
+                 "img/Left_Y_Symmetry_Angle.svg",
+                 "img/Left_Y_Symmetry_X_Rotation.svg",
+                 "img/Left_Y_Symmetry_X_Rotation_180.svg",
+                 "img/Left_Y_Symmetry_X_Symmetry.svg",
+                 "img/Left_Y_Symmetry_Y_Translation.svg",
+                 "img/Left_Y_Symmetry_X_Translation.svg"
+                                    ];
+
+var Ysym_Right = ["img/Right_Y_Symmetry_Big.svg",
+                  "img/Right_Y_Symmetry_Angle.svg",
+                  "img/Right_Y_Symmetry_X_Rotation.svg",
+                  "img/Right_Y_Symmetry_X_Rotation_180.svg",
+                  "img/Right_Y_Symmetry_X_Symmetry.svg",
+                  "img/Right_Y_Symmetry_Y_Translation.svg",
+                  "img/Right_Y_Symmetry_X_Translation.svg"
+                                    ];
+
+
+
+/* preload images */
+var preload = {
+  type: jsPsychPreload,
+  images: ['img/uni_org_color_li.png', stim_3d_identiy_left, stim_3d_identiy_right, Ysym_Left, Ysym_Right, robot_intro_stim, arm_intro_stim, arm_tests]
+}
+timeline.push(preload);     
+   
+
+//////////////////////////////////////////////////////
+/* Condition selection (just for offline demo) */
+
+var select = {
+  type: jsPsychSurveyText,
+  questions: [
+    {
+		prompt: 
+		`
+		<p><b>Select a condition: type in a number between 1 and 14.</b></p>
+		`, 
+		placeholder: 'number between 1 and 14 (1 to 7 = Y_Sym Left; 8 to 14 = Y_Sym Right',
+		required: true,
+		name: 'CondSel',
+	},
+  ],
+	on_finish: function(data){
+	condition = data.response.CondSel,
+	console.log(condition);
+	} 
+}
+timeline.push(select);
+
+
+
+//////////////////////////////////////////////////////
+/* Instructions ( all conditions)  */
+var cond_selected = {
+    type: jsPsychHtmlButtonResponse,
+    stimulus: function () {
+    return "You chose to see Condition "+condition;
+		},
+    choices: ['Continue']
+};
+timeline.push(cond_selected);
+
+
+//////////////////////////////////////////////////////
+/* Confirmations */
+var confs = {
+  type: jsPsychSurveyMultiChoice,
+  questions: [
+    {
+      prompt: "This study works properly only on Desktop PCs and Laptops, and not on Smartphones or Tablets. Before you proceed, please confirm that you take part via Desktop PC or Laptop.", 
+      name: 'DesktopConf', 
+      options: ['1: I confirm', '2: I do not confirm'], 
+      required: true
+    }, 
+    {
+      prompt: "For the scientific utility of the results, it is very important that you provide complete and careful responses. How seriously will you take your participation in the study?", 
+      name: 'AttentConf', 
+      options: ['1: I will take it seriously', '2: I will not take it seriously'], 
+      required: true
+    }, 
+  ],
+  on_finish: function(data){
+	  jsPsych.data.addProperties({desktop_conf: data.response.DesktopConf, attent_conf: data.response.AttentConf});
+  },
+  preamble: `
+              <p><img src="img/uni_org_color_li.png" width = 100%></img></p>
+              <p><b>Welcome to this experiment and thank you very much for your participation.</b></p>
+            `
+};
+timeline.push(confs);
+
+
+
+/////////////////////////////////////////////////////////
+/* General instructions (all conditions) */
+var instr_gen = {
+    type: jsPsychHtmlButtonResponse,
+    stimulus:[
+    `
+    <p><i>Please read the following instructions</i>:</p>
+    <p>
+      In this experiment, you will be asked to read a fictitious scenario and then make a judgment based on the information that 
+      will be provided in the description. The scenario you will see was constructed such that you can intuitively understand the
+      relevant aspects. Please assume that everything is exactly as described in the scenario, irrespective of how plausible it sounds to you.
+    </p>
+    <p><i>If you have understood everything accurately and feel prepared to start, click "Continue" to start the experiment.</i></p>
+    <br>
+    `],
+    on_finish: function(data){
+      if (condition <= 7) {
+        initial_stim = stim_3d_identiy_left[0]
+      } else {
+        initial_stim = stim_3d_identiy_right[0]
+      };
+    },
+    choices: ['Continue'],
+}
+timeline.push(instr_gen);
+
+
+//////////////////////////////////////////////////////////
+// Scenario Intro (all conditions)
+
+var instr_scen_01 = {
+    type: jsPsychHtmlButtonResponse,
+    stimulus:function() {
+    return`
+    <p>
+      Scientists on an extraterrestrial mission have landed on a foreign planet not so different from planet Earth. 
+      They plan to use their two robotic rovers to explore the desert in which they have landed. 
+      The rovers have a robotic arm with which they can pick up objects from the ground and turn them around for careful          examination. 
+      An illustration of the two identical rovers is shown below.
+    </p>
+    
+    <img src="`+robot_intro_stim+`" width = 100%></img>
+    
+    <p>If you have studied the information <b>thoroughly</b>, please click "Continue" to proceed.</p>
+    `
+  },
+    on_finish: function(data){
+      if (condition == 1) {
+        transformation = Ysym_Left[0],
+        side = "left" 
+      } 
+      else if (condition == 2) {
+        transformation = Ysym_Left[1],
+        side = "left"
+      }
+      else if (condition == 3) {
+        transformation = Ysym_Left[2],
+        side = "left"
+      }
+      else if (condition == 4) {
+        transformation = Ysym_Left[3],
+        side = "left"
+      }
+      else if (condition == 5) {
+        transformation = Ysym_Left[4],
+        side = "left"
+      }
+      else if (condition == 6) {
+        transformation = Ysym_Left[5],
+        side = "left"
+      }
+      else if (condition == 7) {
+        transformation = Ysym_Left[6],
+        side = "left"
+      }
+      else if (condition == 8) {
+        transformation = Ysym_Right[0],
+        side = "right"
+      }
+      else if (condition == 9) {
+        transformation = Ysym_Right[1],
+        side = "right"
+      }
+      else if (condition == 10) {
+        transformation = Ysym_Right[2],
+        side = "right"
+      }
+      else if (condition == 11) {
+        transformation = Ysym_Right[3],
+        side = "right"
+      }
+      else if (condition == 12) {
+        transformation = Ysym_Right[4],
+        side = "right"
+      }
+      else if (condition == 13) {
+        transformation = Ysym_Right[5],
+        side = "right"
+      }
+      else {
+        transformation = Ysym_Right[6],
+        side = "right"
+      };
+	  console.log(transformation);
+	}, 
+  choices: ['Continue']
+}
+timeline.push(instr_scen_01);
+
+
+var instr_scen_02 = {
+    type: jsPsychHtmlButtonResponse,
+    stimulus:function() {
+    return`
+    <p>
+      The robotic arm of the rovers has different joints allowing it to reach down to the ground. 
+      The arm also has a rotatable front part with a robotic claw that allows it to pick up objects and turn them in different directions. 
+      An illustration is shown below.
+    </p>
+    
+    <img src="`+arm_intro_stim+`" width = 100%></img>
+    
+    <p>If you have studied the information <b>thoroughly</b>, please click "Continue" to proceed.</p>
+    `
+  },
+  choices: ['Continue']
+}
+timeline.push(instr_scen_02);
+
+
+var instr_scen_03 = {
+    type: jsPsychHtmlButtonResponse,
+    stimulus:function() {
+    return`
+    <p>
+      Before the scientists send the rovers into the desert, they want to check if the robotic arms are working correctly. 
+      As a test, they put their two coffee mugs on the ground and command the two robots to pick them up and move them around for a while. 
+      Below you can see pictures of this test. The first one shows the two mugs on the ground. 
+      The second picture shows that both robots successfully picked up a mug. 
+      The robots seem fit to explore the desert.
+    </p>
+    
+    <img src="`+arm_test_stim+`" width = 100%></img>
+    
+    <p>If you have studied the information <b>thoroughly</b>, please click "Continue" to proceed.</p>
+    `
+  },
+  on_finish: function(data){
+	  jsPsych.data.addProperties({arm_test_pic: arm_test_stim});
+  },
+  choices: ['Continue']
+}
+timeline.push(instr_scen_03);
+
+
+var initial_object = {
+    type: jsPsychHtmlButtonResponse,
+    stimulus:function() {
+    return`
+    <p>
+      Shortly after the rovers had started exploring the desert, the scientists notice an unfamiliar black object lying on the ground. 
+      They command one of their two rovers to approach the object.
+      As the rover comes closer, its radiation detector starts buzzing. It tells the scientists that the object is emitting alpha rays.
+      They command the rover to pick the object up and move it around for a while. 
+      While the rover is still moving the object around, the scientists take a picture.
+      Below you can see the photograph they took. 
+    </p>
+    
+    <img src="`+initial_stim+`" width = 100%></img>
+    
+    <p>If you have studied the information <b>thoroughly</b>, please click "Continue" to proceed.</p>
+    `
+  },
+  on_finish: function(data){
+	  jsPsych.data.addProperties({arm_test_pic: arm_test_stim});
+  },
+  choices: ['Continue']
+}
+timeline.push(initial_object);
+
+
+////////////////////////////// Instructing the Decision Situation 
+// Y-Sym on the left side
+
+var test = {
+  type: jsPsychSurveyLikert,
+  questions: [
+    {
+      prompt: `According to your intuition: Which of the two new objects above do you think is emitting the <u>different</u> intensity of alpha rays compared to the initial object?`, 
+      labels: ["Rather the left object", "I'm absolutely uncertain", "Rather the right object"],
+      name: 'selection',
+      required: true,
+    },
+  ],
+  preamble: function() {
+    return`
+      <p>Later on, the scientists spot two new objects lying on the ground. 
+        As their rovers approach these two novel objects, their radiation detectors show that one of these objects is emitting the same intensity of alpha rays as the initial object you have seen on the previous screen. 
+        The other object, by contrast, is emitting a different intensity of alpha rays than the initial object you've seen on the previous screen.
+        The scientists command the rovers to pick the two objects up and move them around for a while. 
+        While the rovers are still moving the objects around, the scientists take a picture.
+        Below you can see the photograph they took.</p> 
+      <p><img src="`+transformation+`" width = 100%></img></p>
+    `
+  },
+  on_finish: function(data){
+	  jsPsych.data.addProperties({Ysym_side: side, test_stimulus: transformation, dv_selection: data.response.selection});
+    console.log(data.response.selection);
+  },
+};
+timeline.push(test);
+
+
+
+
+/////////////////////////////////////// explanation
+var explan = {
+  type: jsPsychSurveyText,
+  name: 'Free_explan',
+  questions: [
+    {prompt: `We'd now like to learn a little bit more about the choice you just made. Please use the text field below to give a short explanation for your decision.`, 
+    rows: 10, 
+    columns: 100, 
+    required: false,
+    name: 'Explanation'
+    },
+  ],
+  on_finish: function(data){
+	  jsPsych.data.addProperties({explanation: data.response.Explanation});
+  },
+}
+//timeline.push(explan);
+
+
+/////////////////////////////////////// demographics
+var demogr_age = {
+  type: jsPsychSurveyText,
+  name: 'Age_query',
+  questions: [
+    {prompt: 'How old are you?', 
+    placeholder: 'Age as a number', 
+    required: true,
+    name: 'Age'
+    },
+  ],
+  on_finish: function(data){
+	  jsPsych.data.addProperties({age: data.response.Age});
+  },
+}
+
+
+
+var demogr_gender = {
+  type: jsPsychSurveyMultiChoice,
+  name: 'gender_query',
+  questions: [
+    {
+      prompt: "Please indicate with which gender you identify.", 
+      options: ['1: male', '2: female', '3: non-binary', '4: prefer not to say'],
+      required: true,
+      name: 'Gender'
+    },
+  ],
+  on_finish: function(data){
+	  jsPsych.data.addProperties({gender: data.response.Gender});
+  },
+};
+timeline.push(demogr_age, demogr_gender);
+
+
+
+
+/////////////////////////////////////// technical issues
+var tech_issues = {
+  type: jsPsychSurveyText,
+  name: 'Tech_issue_query',
+  questions: [
+    {prompt: 'In the text field below you can report any errors that you came across during the study (e.g., technical issues, layout problems, spelling errors, errors in program logic and flow, etc.).', 
+    rows: 10, 
+    columns: 100, 
+    required: false,
+    name: 'Tech_issue_report'
+    },
+  ],
+  on_finish: function(data){
+	  jsPsych.data.addProperties({tech_issues: data.response.Tech_issue_report});
+	  console.log(data.response.Tech_issue_report)
+  },
+}
+timeline.push(tech_issues);
+
+///////////////////////////////////// debriefing
+
+var debriefing = {
+  type: jsPsychHtmlButtonResponse,
+  stimulus: 
+    `
+    <img src="img/uni_org_color_li.png" width = 100%></img>
+    <p><b>Thank you for taking part in this study!</b></p>
+  
+    <p>The aim of this experiment is to find out more about how people perceive geometrical transformations. 
+    If you are interested in further details or if you have any questions or comments concerning the experiment, 
+    feel free to contact me ANONYMIZED RESEARCHER</i></p>
+    
+    <p>To ensure you receive your reward, please click the button below to return to the Prolific website:</p>
+    `
+    ,
+    choices: ['Finish study']
+};
+timeline.push(debriefing);
+
+
+
+/////////////////////////////////////////////////////////////////
+/* start the experiment */
+    jsPsych.run(timeline);
+    //jsPsych.simulate(timeline);
+
+  
+  </script>
+</html>
